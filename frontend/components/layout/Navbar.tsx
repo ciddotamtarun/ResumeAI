@@ -44,27 +44,27 @@ export default function Navbar() {
       animate={{ y: 0 }}
       transition={{ type: 'spring', stiffness: 100, damping: 20 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? 'glass-strong py-3' : 'py-5'
+        isScrolled ? 'glass-strong py-3' : 'bg-[#FAF8F1]/90 backdrop-blur-md py-5 border-b border-[#E7E1D4]/60'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center glow-sm transition-transform group-hover:scale-110">
+            <div className="w-9 h-9 rounded-xl bg-[#4F46D8] flex items-center justify-center glow-sm transition-transform group-hover:scale-110">
               <Brain className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-bold font-['Outfit'] gradient-text">ResumeAI</span>
           </Link>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-2">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-sm font-medium transition-colors hover:text-indigo-400 ${
-                  pathname === link.href ? 'text-indigo-400' : 'text-gray-400'
+                className={`text-sm font-medium px-3.5 py-1.5 rounded-lg transition-colors ${
+                  pathname === link.href ? 'text-[#4F46D8] bg-[#F3F0FC] font-semibold' : 'text-[#77798B] hover:text-[#171A35] hover:bg-[#F3F0FC]/50'
                 }`}
               >
                 {link.label}
@@ -78,16 +78,16 @@ export default function Navbar() {
               <div className="relative">
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex items-center gap-2 glass px-3 py-2 rounded-xl hover:bg-white/10 transition-colors"
+                  className="flex items-center gap-2 glass px-3 py-2 rounded-xl hover:bg-[#F3F0FC] transition-colors border border-[#E7E1D4]"
                 >
                   <Avatar className="w-7 h-7">
                     <AvatarImage src={user?.avatar} />
-                    <AvatarFallback className="bg-indigo-600 text-white text-xs">
+                    <AvatarFallback className="bg-[#4F46D8] text-white text-xs">
                       {user?.name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm text-gray-200">{user?.name?.split(' ')[0]}</span>
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-[#171A35] font-medium">{user?.name?.split(' ')[0]}</span>
+                  <ChevronDown className="w-4 h-4 text-[#77798B]" />
                 </button>
 
                 <AnimatePresence>
@@ -97,18 +97,18 @@ export default function Navbar() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.95 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-2 w-48 glass-strong rounded-xl py-2 shadow-xl"
+                      className="absolute right-0 top-full mt-2 w-48 bg-[#FFFFFF] border border-[#E7E1D4] rounded-xl py-2 shadow-xl"
                     >
                       <Link
                         href="/dashboard"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-[#171A35] hover:bg-[#F3F0FC] hover:text-[#4F46D8] transition-colors"
                         onClick={() => setIsProfileOpen(false)}
                       >
-                        <LayoutDashboard className="w-4 h-4" /> Dashboard
+                        <LayoutDashboard className="w-4 h-4 text-[#4F46D8]" /> Dashboard
                       </Link>
                       <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
                       >
                         <LogOut className="w-4 h-4" /> Sign Out
                       </button>
@@ -119,12 +119,12 @@ export default function Navbar() {
             ) : (
               <>
                 <Link href="/auth/login">
-                  <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-white/10">
+                  <Button variant="ghost" size="sm" className="text-[#171A35] hover:text-[#4F46D8] hover:bg-[#F3F0FC]">
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/auth/register">
-                  <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white glow-sm transition-all hover:scale-105">
+                  <Button size="sm" className="bg-[#4F46D8] hover:bg-[#4338CA] text-white glow-sm transition-all hover:scale-105">
                     Get Started Free
                   </Button>
                 </Link>
@@ -135,7 +135,7 @@ export default function Navbar() {
           {/* Mobile menu button */}
           <button
             onClick={() => setIsMobileOpen(!isMobileOpen)}
-            className="md:hidden text-gray-400 hover:text-white"
+            className="md:hidden text-[#171A35] hover:text-[#4F46D8]"
           >
             {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -148,15 +148,17 @@ export default function Navbar() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="md:hidden mt-4 pb-4 border-t border-white/10"
+              className="md:hidden mt-4 pb-4 border-t border-[#E7E1D4] bg-[#FFFFFF] rounded-2xl p-4 shadow-xl border border-[#E7E1D4]"
             >
-              <div className="pt-4 flex flex-col gap-2">
+              <div className="flex flex-col gap-2">
                 {navLinks.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
                     onClick={() => setIsMobileOpen(false)}
-                    className="text-gray-300 hover:text-white py-2 px-3 rounded-lg hover:bg-white/10 transition-colors"
+                    className={`py-2 px-3 rounded-lg transition-colors text-sm font-medium ${
+                      pathname === link.href ? 'text-[#4F46D8] bg-[#F3F0FC] font-semibold' : 'text-[#171A35] hover:bg-[#F3F0FC]'
+                    }`}
                   >
                     {link.label}
                   </Link>
@@ -164,17 +166,17 @@ export default function Navbar() {
                 {isAuthenticated ? (
                   <button
                     onClick={handleLogout}
-                    className="text-left text-red-400 hover:text-red-300 py-2 px-3 rounded-lg hover:bg-red-500/10 transition-colors"
+                    className="text-left text-red-600 hover:text-red-700 py-2 px-3 rounded-lg hover:bg-red-50 transition-colors text-sm"
                   >
                     Sign Out
                   </button>
                 ) : (
                   <div className="flex flex-col gap-2 mt-4">
                     <Link href="/auth/login" onClick={() => setIsMobileOpen(false)}>
-                      <Button variant="ghost" className="w-full text-gray-300">Sign In</Button>
+                      <Button variant="ghost" className="w-full text-[#171A35] hover:bg-[#F3F0FC]">Sign In</Button>
                     </Link>
                     <Link href="/auth/register" onClick={() => setIsMobileOpen(false)}>
-                      <Button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white">
+                      <Button className="w-full bg-[#4F46D8] hover:bg-[#4338CA] text-white">
                         Get Started Free
                       </Button>
                     </Link>

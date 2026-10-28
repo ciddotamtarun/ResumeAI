@@ -42,21 +42,21 @@ function AnimatedRing({ score, label, size = 140 }: { score: number; label: stri
     <div className="flex flex-col items-center">
       <div className="relative" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="-rotate-90">
-          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={strokeWidth} />
+          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#E7E1D4" strokeWidth={strokeWidth} />
           <circle
             cx={size / 2} cy={size / 2} r={radius} fill="none"
             stroke={color} strokeWidth={strokeWidth} strokeLinecap="round"
             strokeDasharray={circumference} strokeDashoffset={dashoffset}
             className="score-ring"
-            style={{ filter: `drop-shadow(0 0 6px ${color}50)` }}
+            style={{ filter: `drop-shadow(0 0 6px ${color}40)` }}
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-2xl font-black font-['Outfit']" style={{ color }}>{display}</span>
-          <span className="text-xs text-gray-400">{getScoreLabel(score)}</span>
+          <span className="text-xs text-[#77798B]">{getScoreLabel(score)}</span>
         </div>
       </div>
-      <p className="text-sm text-gray-400 mt-2 text-center">{label}</p>
+      <p className="text-sm text-[#77798B] mt-2 text-center">{label}</p>
     </div>
   );
 }
@@ -64,15 +64,15 @@ function AnimatedRing({ score, label, size = 140 }: { score: number; label: stri
 function AnimatedBar({ score, label, icon: Icon, delay = 0 }: { score: number; label: string; icon: React.ElementType; delay?: number }) {
   const color = getScoreColor(score);
   return (
-    <div className="glass rounded-2xl p-4">
+    <div className="glass rounded-2xl p-4 border border-[#E7E1D4] bg-[#FFFFFF]">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Icon className="w-4 h-4 text-gray-400" />
-          <span className="text-gray-300 text-sm font-medium">{label}</span>
+          <Icon className="w-4 h-4 text-[#77798B]" />
+          <span className="text-[#171A35] text-sm font-medium">{label}</span>
         </div>
         <span className="font-bold text-lg" style={{ color }}>{score}</span>
       </div>
-      <div className="w-full bg-white/10 rounded-full h-2">
+      <div className="w-full bg-[#F3F0FC] rounded-full h-2 border border-[#E7E1D4]/50">
         <motion.div
           className="h-full rounded-full"
           style={{ background: color }}
@@ -112,19 +112,19 @@ export default function InterviewResultsPage({ params }: { params: Promise<{ id:
 
   if (isLoading || loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#FAF8F1] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-[#4F46D8]/20 border-t-[#4F46D8] rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!interview?.finalResults) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+      <div className="min-h-screen bg-[#FAF8F1] flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-400 mb-4">Results not available yet</p>
+          <p className="text-[#77798B] mb-4">Results not available yet</p>
           <Link href="/dashboard">
-            <button className="bg-indigo-600 text-white px-4 py-2 rounded-xl">Back to Dashboard</button>
+            <button className="bg-[#4F46D8] hover:bg-[#4338CA] text-white px-4 py-2 rounded-xl transition-colors shadow-sm">Back to Dashboard</button>
           </Link>
         </div>
       </div>
@@ -134,17 +134,17 @@ export default function InterviewResultsPage({ params }: { params: Promise<{ id:
   const results: InterviewResults = interview.finalResults;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
+    <div className="min-h-screen bg-[#FAF8F1] text-[#171A35]">
       {/* Top bar */}
-      <div className="glass-strong border-b border-white/5 px-6 py-4 flex items-center justify-between">
+      <div className="glass-strong border-b border-[#E7E1D4] px-6 py-4 flex items-center justify-between bg-[#FFFFFF]">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-[#4F46D8] flex items-center justify-center">
             <Brain className="w-4 h-4 text-white" />
           </div>
-          <span className="text-white font-bold font-['Outfit']">Interview Results</span>
+          <span className="text-[#171A35] font-bold font-['Outfit']">Interview Results</span>
         </div>
         <Link href="/dashboard">
-          <button className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors">
+          <button className="flex items-center gap-1.5 text-[#77798B] hover:text-[#171A35] text-sm transition-colors">
             <ArrowLeft className="w-4 h-4" /> Dashboard
           </button>
         </Link>
@@ -155,9 +155,9 @@ export default function InterviewResultsPage({ params }: { params: Promise<{ id:
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass rounded-3xl p-8 mb-8 text-center"
+          className="glass rounded-3xl p-8 mb-8 text-center border border-[#E7E1D4] bg-[#FFFFFF]"
         >
-          <div className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full text-sm text-indigo-300 mb-6">
+          <div className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full text-sm text-[#4F46D8] font-medium border border-[#E7E1D4] mb-6">
             <BarChart3 className="w-4 h-4" /> Overall Performance
           </div>
           <div className="flex justify-center mb-6">
@@ -166,7 +166,7 @@ export default function InterviewResultsPage({ params }: { params: Promise<{ id:
           <h2 className="text-3xl font-black font-['Outfit'] gradient-text mb-2">
             {results.overallScore >= 80 ? 'Excellent Work! 🎉' : results.overallScore >= 60 ? 'Good Effort! 👍' : 'Keep Practicing! 💪'}
           </h2>
-          <p className="text-gray-400">
+          <p className="text-[#77798B]">
             You scored {results.overallScore}/100 in your mock interview
           </p>
         </motion.div>
@@ -190,9 +190,9 @@ export default function InterviewResultsPage({ params }: { params: Promise<{ id:
           transition={{ delay: 0.2 }}
           className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"
         >
-          <div className="glass rounded-2xl p-6">
-            <h3 className="text-emerald-400 font-bold mb-4 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5" /> Strengths
+          <div className="glass rounded-2xl p-6 border border-[#E7E1D4] bg-[#FFFFFF]">
+            <h3 className="text-[#168575] font-bold mb-4 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-[#168575]" /> Strengths
             </h3>
             <ul className="space-y-3">
               {results.strengths.map((s, i) => (
@@ -203,18 +203,18 @@ export default function InterviewResultsPage({ params }: { params: Promise<{ id:
                   transition={{ delay: 0.3 + i * 0.08 }}
                   className="flex items-start gap-2.5"
                 >
-                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <CheckCircle className="w-3 h-3 text-emerald-400" />
+                  <div className="w-5 h-5 rounded-full bg-[#168575]/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <CheckCircle className="w-3 h-3 text-[#168575]" />
                   </div>
-                  <span className="text-gray-300 text-sm leading-relaxed">{s}</span>
+                  <span className="text-[#171A35] text-sm leading-relaxed">{s}</span>
                 </motion.li>
               ))}
             </ul>
           </div>
 
-          <div className="glass rounded-2xl p-6">
-            <h3 className="text-amber-400 font-bold mb-4 flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5" /> Areas for Improvement
+          <div className="glass rounded-2xl p-6 border border-[#E7E1D4] bg-[#FFFFFF]">
+            <h3 className="text-amber-600 font-bold mb-4 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-600" /> Areas for Improvement
             </h3>
             <ul className="space-y-3">
               {results.areasForImprovement.map((area, i) => (
@@ -225,10 +225,10 @@ export default function InterviewResultsPage({ params }: { params: Promise<{ id:
                   transition={{ delay: 0.3 + i * 0.08 }}
                   className="flex items-start gap-2.5"
                 >
-                  <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <AlertTriangle className="w-3 h-3 text-amber-400" />
+                  <div className="w-5 h-5 rounded-full bg-amber-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <AlertTriangle className="w-3 h-3 text-amber-600" />
                   </div>
-                  <span className="text-gray-300 text-sm leading-relaxed">{area}</span>
+                  <span className="text-[#171A35] text-sm leading-relaxed">{area}</span>
                 </motion.li>
               ))}
             </ul>
@@ -240,12 +240,12 @@ export default function InterviewResultsPage({ params }: { params: Promise<{ id:
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="glass rounded-2xl p-6 mb-8"
+          className="glass rounded-2xl p-6 mb-8 border border-[#E7E1D4] bg-[#FFFFFF]"
         >
-          <h3 className="text-white font-bold mb-4 flex items-center gap-2 font-['Outfit']">
-            <Brain className="w-5 h-5 text-indigo-400" /> Detailed AI Feedback
+          <h3 className="text-[#171A35] font-bold mb-4 flex items-center gap-2 font-['Outfit']">
+            <Brain className="w-5 h-5 text-[#4F46D8]" /> Detailed AI Feedback
           </h3>
-          <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
+          <p className="text-[#171A35] text-sm leading-relaxed whitespace-pre-wrap">
             {results.detailedFeedback}
           </p>
         </motion.div>
@@ -261,7 +261,7 @@ export default function InterviewResultsPage({ params }: { params: Promise<{ id:
             <Link href={`/resume/${interview.resumeId._id}`}>
               <motion.button
                 whileHover={{ scale: 1.05 }}
-                className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold px-8 py-3 rounded-xl transition-all glow-sm"
+                className="flex items-center justify-center gap-2 bg-[#4F46D8] hover:bg-[#4338CA] text-white font-semibold px-8 py-3 rounded-xl transition-all glow-sm shadow-md"
               >
                 <RefreshCw className="w-4 h-4" /> Start New Interview
               </motion.button>
@@ -270,7 +270,7 @@ export default function InterviewResultsPage({ params }: { params: Promise<{ id:
           <Link href="/dashboard">
             <motion.button
               whileHover={{ scale: 1.05 }}
-              className="flex items-center justify-center gap-2 glass border border-white/10 text-gray-300 hover:text-white font-semibold px-8 py-3 rounded-xl transition-all hover:bg-white/10"
+              className="flex items-center justify-center gap-2 glass border border-[#E7E1D4] text-[#171A35] hover:bg-[#F3F0FC] font-semibold px-8 py-3 rounded-xl transition-all"
             >
               <Home className="w-4 h-4" /> Back to Dashboard
             </motion.button>

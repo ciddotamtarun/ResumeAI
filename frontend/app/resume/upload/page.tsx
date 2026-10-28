@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
-import Navbar from '@/components/layout/Navbar';
+import AppShell from '@/components/layout/AppShell';
 import { toast } from 'sonner';
 
 // ─── Role Definitions ──────────────────────────────────────────────────────────
@@ -122,8 +122,8 @@ export default function UploadPage() {
   }
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#FAF8F1] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-[#4F46D8]/20 border-t-[#4F46D8] rounded-full animate-spin" />
       </div>
     );
   }
@@ -223,19 +223,18 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
-      <Navbar />
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16">
+    <AppShell>
+      <div className="max-w-4xl mx-auto py-2">
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full text-sm text-indigo-300 mb-4">
+          <div className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full text-sm text-[#4F46D8] font-medium border border-[#E7E1D4] mb-4">
             <Target className="w-4 h-4" /> Role-Based Resume Analysis
           </div>
           <h1 className="text-4xl font-black font-['Outfit'] gradient-text mb-3">
             {step === 1 ? 'What Role Are You Targeting?' : 'Upload Your Resume'}
           </h1>
-          <p className="text-gray-400">
+          <p className="text-[#77798B]">
             {step === 1
               ? 'Select your target job role so AI can tailor feedback specifically for you.'
               : `Uploading for: 🎯 ${activeRole}`}
@@ -248,17 +247,17 @@ export default function UploadPage() {
             <div key={s} className="flex items-center gap-2">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
                 step === s
-                  ? 'bg-indigo-500 text-white'
+                  ? 'bg-[#4F46D8] text-white shadow-sm'
                   : step > s
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-white/10 text-gray-400'
+                  ? 'bg-[#168575] text-white'
+                  : 'bg-[#FFFFFF] border border-[#E7E1D4] text-[#77798B]'
               }`}>
                 {step > s ? '✓' : s}
               </div>
-              <span className={`text-sm ${step === s ? 'text-white font-medium' : 'text-gray-500'}`}>
+              <span className={`text-sm ${step === s ? 'text-[#171A35] font-semibold' : 'text-[#77798B]'}`}>
                 {s === 1 ? 'Select Role' : 'Upload Resume'}
               </span>
-              {s < 2 && <div className="w-12 h-px bg-white/10 mx-1" />}
+              {s < 2 && <div className="w-12 h-px bg-[#E7E1D4] mx-1" />}
             </div>
           ))}
         </motion.div>
@@ -275,7 +274,7 @@ export default function UploadPage() {
             >
               {ROLE_CATEGORIES.map((cat, ci) => (
                 <div key={ci} className="mb-6">
-                  <p className="text-sm text-gray-400 font-semibold mb-3 px-1">{cat.category}</p>
+                  <p className="text-sm text-[#77798B] font-semibold mb-3 px-1">{cat.category}</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                     {cat.roles.map((role) => {
                       const Icon = role.icon;
@@ -289,16 +288,16 @@ export default function UploadPage() {
                           onClick={() => handleRoleSelect(role.label)}
                           className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border text-center transition-all ${
                             isSelected
-                              ? 'border-indigo-500/70 bg-indigo-500/15 shadow-lg shadow-indigo-500/10'
-                              : 'border-white/10 hover:border-white/25 hover:bg-white/5'
+                              ? 'border-[#4F46D8] bg-[#F3F0FC] shadow-sm'
+                              : 'border-[#E7E1D4] bg-[#FFFFFF] hover:border-[#4F46D8]/50 hover:bg-[#F3F0FC]/40'
                           }`}
                         >
-                          <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${role.color} flex items-center justify-center flex-shrink-0`}>
+                          <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${role.color} flex items-center justify-center flex-shrink-0 shadow-sm`}>
                             <Icon className="w-4 h-4 text-white" />
                           </div>
-                          <span className="text-xs text-gray-200 font-medium leading-tight">{role.label}</span>
+                          <span className="text-xs text-[#171A35] font-medium leading-tight">{role.label}</span>
                           {isSelected && (
-                            <div className="absolute top-1.5 right-1.5 w-4 h-4 bg-indigo-500 rounded-full flex items-center justify-center">
+                            <div className="absolute top-1.5 right-1.5 w-4 h-4 bg-[#4F46D8] rounded-full flex items-center justify-center">
                               <CheckCircle className="w-3 h-3 text-white" />
                             </div>
                           )}
@@ -310,17 +309,17 @@ export default function UploadPage() {
               ))}
 
               {/* Custom Role Input */}
-              <div className="mt-4 glass rounded-2xl p-5">
+              <div className="mt-4 glass rounded-2xl p-5 border border-[#E7E1D4] bg-[#FFFFFF]">
                 <button
                   onClick={() => { setShowCustomInput(true); setSelectedRole(''); }}
                   className={`flex items-center gap-3 w-full text-left transition-all ${showCustomInput ? 'mb-3' : ''}`}
                 >
-                  <div className={`w-9 h-9 rounded-lg bg-gradient-to-br from-gray-500 to-slate-600 flex items-center justify-center flex-shrink-0 ${showCustomInput ? 'ring-2 ring-indigo-500' : ''}`}>
+                  <div className={`w-9 h-9 rounded-lg bg-gradient-to-br from-gray-500 to-slate-600 flex items-center justify-center flex-shrink-0 ${showCustomInput ? 'ring-2 ring-[#4F46D8]' : ''}`}>
                     <Edit3 className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <p className="text-white text-sm font-medium">Other / Custom Role</p>
-                    <p className="text-gray-400 text-xs">Type any role not listed above</p>
+                    <p className="text-[#171A35] text-sm font-medium">Other / Custom Role</p>
+                    <p className="text-[#77798B] text-xs">Type any role not listed above</p>
                   </div>
                 </button>
                 {showCustomInput && (
@@ -332,7 +331,7 @@ export default function UploadPage() {
                     value={customRole}
                     onChange={(e) => setCustomRole(e.target.value)}
                     placeholder="e.g. Supply Chain Manager, Embedded Systems Engineer..."
-                    className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-indigo-500/60 focus:bg-white/10 transition-all"
+                    className="w-full bg-[#FAF8F1] border border-[#E7E1D4] rounded-xl px-4 py-3 text-[#171A35] text-sm placeholder-[#77798B] focus:outline-none focus:border-[#4F46D8] focus:bg-[#FFFFFF] transition-all"
                     autoFocus
                   />
                 )}
@@ -346,12 +345,12 @@ export default function UploadPage() {
                   disabled={!activeRole}
                   whileHover={{ scale: activeRole ? 1.02 : 1 }}
                   whileTap={{ scale: activeRole ? 0.98 : 1 }}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all glow-effect text-lg"
+                  className="w-full bg-[#4F46D8] hover:bg-[#4338CA] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all glow-effect text-lg shadow-md"
                 >
                   Continue to Upload <ChevronRight className="w-5 h-5" />
                 </motion.button>
                 {!activeRole && (
-                  <p className="text-center text-gray-500 text-sm mt-2">Select a role to continue</p>
+                  <p className="text-center text-[#77798B] text-sm mt-2">Select a role to continue</p>
                 )}
               </motion.div>
             </motion.div>
@@ -366,17 +365,17 @@ export default function UploadPage() {
               exit={{ opacity: 0, x: 20 }}
             >
               {/* Selected Role Badge */}
-              <div className="glass rounded-2xl p-4 mb-5 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0">
+              <div className="glass rounded-2xl p-4 mb-5 flex items-center gap-3 border border-[#E7E1D4] bg-[#FFFFFF]">
+                <div className="w-10 h-10 rounded-xl bg-[#4F46D8] flex items-center justify-center flex-shrink-0">
                   <Target className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs text-gray-400">Target Role</p>
-                  <p className="text-white font-semibold">{activeRole}</p>
+                  <p className="text-xs text-[#77798B]">Target Role</p>
+                  <p className="text-[#171A35] font-semibold">{activeRole}</p>
                 </div>
                 <button
                   onClick={() => setStep(1)}
-                  className="text-gray-400 hover:text-indigo-400 text-xs transition-colors"
+                  className="text-[#4F46D8] hover:underline text-xs font-medium transition-colors"
                 >
                   Change
                 </button>
@@ -392,8 +391,8 @@ export default function UploadPage() {
                     exit={{ opacity: 0 }}
                     className={`relative border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all ${
                       isDragging
-                        ? 'border-indigo-500 bg-indigo-500/10'
-                        : 'border-white/20 hover:border-indigo-500/50 hover:bg-white/5'
+                        ? 'border-[#4F46D8] bg-[#F3F0FC]'
+                        : 'border-[#E7E1D4] bg-[#FFFFFF] hover:border-[#4F46D8]/50 hover:bg-[#F3F0FC]/30'
                     }`}
                     onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                     onDragLeave={() => setIsDragging(false)}
@@ -409,20 +408,20 @@ export default function UploadPage() {
                     />
                     <motion.div
                       animate={isDragging ? { scale: 1.1 } : { scale: 1 }}
-                      className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-violet-500/20 border border-indigo-500/30 flex items-center justify-center mx-auto mb-4"
+                      className="w-20 h-20 rounded-2xl bg-[#F3F0FC] border border-[#E7E1D4] flex items-center justify-center mx-auto mb-4"
                     >
-                      <Upload className="w-9 h-9 text-indigo-400" />
+                      <Upload className="w-9 h-9 text-[#4F46D8]" />
                     </motion.div>
-                    <h3 className="text-white font-semibold text-lg mb-2">
+                    <h3 className="text-[#171A35] font-semibold text-lg mb-2">
                       {isDragging ? 'Drop your resume here!' : 'Drag & drop your resume here'}
                     </h3>
-                    <p className="text-gray-400 text-sm mb-4">or click to browse your files</p>
-                    <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-500">
+                    <p className="text-[#77798B] text-sm mb-4">or click to browse your files</p>
+                    <div className="flex flex-wrap justify-center gap-2 text-xs text-[#77798B]">
                       {['PDF', 'DOCX', 'DOC', 'TXT', 'PNG', 'JPG', 'WEBP'].map((fmt) => (
-                        <span key={fmt} className="glass px-2 py-1 rounded-lg">{fmt}</span>
+                        <span key={fmt} className="bg-[#FAF8F1] border border-[#E7E1D4] text-[#77798B] px-2 py-1 rounded-lg">{fmt}</span>
                       ))}
                     </div>
-                    <p className="text-gray-600 text-xs mt-3">Up to 10MB · Images are parsed via OCR</p>
+                    <p className="text-[#77798B] text-xs mt-3">Up to 10MB · Images are parsed via OCR</p>
                   </motion.div>
                 ) : (
                   <motion.div
@@ -430,24 +429,24 @@ export default function UploadPage() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="glass rounded-2xl p-6"
+                    className="glass rounded-2xl p-6 border border-[#E7E1D4] bg-[#FFFFFF]"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-xl bg-indigo-500/20 flex items-center justify-center flex-shrink-0 text-2xl">
+                      <div className="w-14 h-14 rounded-xl bg-[#F3F0FC] text-[#4F46D8] flex items-center justify-center flex-shrink-0 text-2xl">
                         {getFileIcon(file)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-white font-medium truncate">{file.name}</p>
-                        <p className="text-gray-400 text-sm">{formatFileSize(file.size)}</p>
+                        <p className="text-[#171A35] font-medium truncate">{file.name}</p>
+                        <p className="text-[#77798B] text-sm">{formatFileSize(file.size)}</p>
                       </div>
                       <button
                         onClick={() => setFile(null)}
-                        className="text-gray-500 hover:text-red-400 transition-colors"
+                        className="text-[#77798B] hover:text-red-500 transition-colors"
                       >
                         <X className="w-5 h-5" />
                       </button>
                     </div>
-                    <div className="mt-4 flex items-center gap-2 text-emerald-400 text-sm">
+                    <div className="mt-4 flex items-center gap-2 text-[#168575] text-sm font-medium">
                       <CheckCircle className="w-4 h-4" />
                       File ready for analysis
                     </div>
@@ -462,15 +461,15 @@ export default function UploadPage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    className="glass rounded-2xl p-6 mt-6"
+                    className="glass rounded-2xl p-6 mt-6 border border-[#E7E1D4] bg-[#FFFFFF]"
                   >
                     <div className="flex items-center justify-between mb-4">
-                      <p className="text-white font-medium">{analysisSteps[currentStep]?.label}</p>
-                      <span className="text-indigo-400 font-bold">{Math.round(uploadProgress)}%</span>
+                      <p className="text-[#171A35] font-medium">{analysisSteps[currentStep]?.label}</p>
+                      <span className="text-[#4F46D8] font-bold">{Math.round(uploadProgress)}%</span>
                     </div>
-                    <div className="w-full bg-white/10 rounded-full h-2 mb-4 overflow-hidden">
+                    <div className="w-full bg-[#F3F0FC] rounded-full h-2 mb-4 overflow-hidden border border-[#E7E1D4]">
                       <motion.div
-                        className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full"
+                        className="h-full bg-[#4F46D8] rounded-full"
                         animate={{ width: `${uploadProgress}%` }}
                         transition={{ duration: 0.3 }}
                       />
@@ -479,12 +478,12 @@ export default function UploadPage() {
                       {analysisSteps.map((s, i) => (
                         <div
                           key={s.label}
-                          className={`text-center text-xs py-1.5 px-2 rounded-lg transition-all ${
+                          className={`text-center text-xs py-1.5 px-2 rounded-lg transition-all font-medium ${
                             i < currentStep
-                              ? 'bg-emerald-500/20 text-emerald-400'
+                              ? 'bg-[#168575]/15 text-[#168575]'
                               : i === currentStep
-                              ? 'bg-indigo-500/20 text-indigo-400 animate-pulse'
-                              : 'text-gray-600'
+                              ? 'bg-[#F3F0FC] text-[#4F46D8] animate-pulse border border-[#4F46D8]/30'
+                              : 'text-[#77798B] bg-[#FAF8F1]'
                           }`}
                         >
                           {i < currentStep ? '✓' : i + 1}. {s.label.split('...')[0]}
@@ -506,7 +505,7 @@ export default function UploadPage() {
                   <button
                     id="back-to-role"
                     onClick={() => setStep(1)}
-                    className="flex items-center gap-2 px-6 py-4 rounded-xl border border-white/15 text-gray-400 hover:text-white hover:border-white/30 transition-all font-medium"
+                    className="flex items-center gap-2 px-6 py-4 rounded-xl border border-[#E7E1D4] text-[#77798B] hover:text-[#171A35] hover:bg-[#F3F0FC] transition-all font-medium bg-[#FFFFFF]"
                   >
                     <ChevronLeft className="w-4 h-4" /> Back
                   </button>
@@ -516,21 +515,21 @@ export default function UploadPage() {
                     disabled={!file}
                     whileHover={{ scale: file ? 1.02 : 1 }}
                     whileTap={{ scale: file ? 0.98 : 1 }}
-                    className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all glow-effect text-lg"
+                    className="flex-1 bg-[#4F46D8] hover:bg-[#4338CA] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all glow-effect text-lg shadow-md"
                   >
                     Analyze Resume <ChevronRight className="w-5 h-5" />
                   </motion.button>
                 </motion.div>
               )}
               {!file && !isUploading && (
-                <p className="text-center text-gray-500 text-sm mt-2">Select a file to continue</p>
+                <p className="text-center text-[#77798B] text-sm mt-2">Select a file to continue</p>
               )}
             </motion.div>
           )}
 
         </AnimatePresence>
       </div>
-    </div>
+    </AppShell>
   );
 }
 

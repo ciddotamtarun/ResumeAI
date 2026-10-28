@@ -192,7 +192,7 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
         recognition.onresult = (event: any) => {
           let finalTranscript = '';
           for (let i = 0; i < event.results.length; i++) {
-             finalTranscript += event.results[i][0].transcript;
+            finalTranscript += event.results[i][0].transcript;
           }
           setAnswer(finalTranscript);
         };
@@ -201,11 +201,11 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
           console.error('Speech recognition error', event.error);
           setIsListening(false);
           if (event.error === 'network') {
-             toast.error('Speech recognition network error. Your browser may not support this feature. Please type your answer instead.');
+            toast.error('Speech recognition network error. Your browser may not support this feature. Please type your answer instead.');
           } else if (event.error === 'not-allowed') {
-             toast.error('Microphone access denied. Please allow microphone permissions.');
+            toast.error('Microphone access denied. Please allow microphone permissions.');
           } else {
-             toast.error(`Speech recognition failed: ${event.error}. Please type your answer.`);
+            toast.error(`Speech recognition failed: ${event.error}. Please type your answer.`);
           }
         };
 
@@ -223,14 +223,14 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
     if (triggerAutoSend) {
       if (answer.trim().length > 0 && !sending) {
         if (isFullscreen) {
-           toast('Voice ended. Sending in 5 seconds...', { icon: '⏳', duration: 4500 });
-           autoSendTimerRef.current = setTimeout(() => {
-             if (document.getElementById('hidden-send-btn')) {
-               document.getElementById('hidden-send-btn')?.click();
-             }
-           }, 5000);
+          toast('Voice ended. Sending in 5 seconds...', { icon: '⏳', duration: 4500 });
+          autoSendTimerRef.current = setTimeout(() => {
+            if (document.getElementById('hidden-send-btn')) {
+              document.getElementById('hidden-send-btn')?.click();
+            }
+          }, 5000);
         } else {
-           handleSend();
+          handleSend();
         }
       }
       setTriggerAutoSend(false);
@@ -263,8 +263,8 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
     
     // Stop recording if active
     if (isListening) {
-       recognitionRef.current?.stop();
-       setIsListening(false);
+      recognitionRef.current?.stop();
+      setIsListening(false);
     }
 
     setSending(true);
@@ -283,11 +283,9 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
       const { data } = await api.post(`/interview/${id}/respond`, { answer: userAnswer });
       if (data.success) {
         setInterview(data.interview);
-        // Let the useEffect handle speaking the new AI message
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to send answer');
-      // Revert optimistic update on failure (simplified)
       fetchInterview(); 
     } finally {
       setSending(false);
@@ -304,8 +302,8 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
 
   if (isLoading || loading || !resolvedParams) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#FAF8F1] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-[#4F46D8]/20 border-t-[#4F46D8] rounded-full animate-spin" />
       </div>
     );
   }
@@ -313,28 +311,28 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
   if (!interview) return null;
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex flex-col h-screen overflow-hidden">
+    <div className="min-h-screen bg-[#FAF8F1] text-[#171A35] flex flex-col h-screen overflow-hidden">
       <button id="hidden-send-btn" onClick={handleSend} className="hidden" aria-hidden="true" />
       
       {/* ── Header ── */}
-      <header className="h-16 border-b border-white/10 bg-black/50 backdrop-blur-md flex items-center justify-between px-6 flex-shrink-0 z-10">
+      <header className="h-16 border-b border-[#E7E1D4] bg-[#FFFFFF] backdrop-blur-md flex items-center justify-between px-6 flex-shrink-0 z-10 shadow-sm">
         <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
+          <Link href="/dashboard" className="text-[#77798B] hover:text-[#171A35] transition-colors">
             <X className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="font-bold text-lg font-['Outfit']">Mock Interview</h1>
-            <p className="text-xs text-indigo-400">Target: {interview.targetRole || 'General'}</p>
+            <h1 className="font-bold text-lg font-['Outfit'] text-[#171A35]">Mock Interview</h1>
+            <p className="text-xs text-[#4F46D8] font-medium">Target: {interview.targetRole || 'General'}</p>
           </div>
         </div>
         
         <div className="flex items-center gap-3">
           <button 
             onClick={() => {
-               setAiVoiceEnabled(!aiVoiceEnabled);
-               if (aiVoiceEnabled) window.speechSynthesis.cancel();
+              setAiVoiceEnabled(!aiVoiceEnabled);
+              if (aiVoiceEnabled) window.speechSynthesis.cancel();
             }}
-            className={`p-2 rounded-lg border transition-all ${aiVoiceEnabled ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-white/5 border-white/10 text-gray-500'}`}
+            className={`p-2 rounded-lg border transition-all ${aiVoiceEnabled ? 'bg-[#F3F0FC] border-[#4F46D8]/40 text-[#4F46D8]' : 'bg-[#FAF8F1] border-[#E7E1D4] text-[#77798B]'}`}
             title={aiVoiceEnabled ? "Disable AI Voice" : "Enable AI Voice"}
           >
             {aiVoiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
@@ -342,15 +340,15 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
 
           <button 
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-2 rounded-lg border border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-all"
+            className="p-2 rounded-lg border border-[#E7E1D4] bg-[#FAF8F1] text-[#77798B] hover:bg-[#F3F0FC] hover:text-[#171A35] transition-all"
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Video"}
           >
             {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
           </button>
           
-          <div className="px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-            <span className="text-xs font-semibold text-indigo-300">Live Session</span>
+          <div className="px-3 py-1.5 rounded-full bg-[#F3F0FC] border border-[#E7E1D4] flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#4F46D8] animate-pulse" />
+            <span className="text-xs font-semibold text-[#4F46D8]">Live Session</span>
           </div>
         </div>
       </header>
@@ -359,19 +357,19 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
         
         {/* LEFT: Video Grid */}
-        <div className={`w-full bg-[#0a0a0f] p-4 flex gap-4 overflow-y-auto pb-32 transition-all duration-300 ${
-           isFullscreen ? 'absolute inset-0 flex-col md:flex-row z-0' : 'flex-col lg:w-[45%] border-r border-white/10 relative'
+        <div className={`w-full bg-[#FAF8F1] p-4 flex gap-4 overflow-y-auto pb-32 transition-all duration-300 ${
+          isFullscreen ? 'absolute inset-0 flex-col md:flex-row z-0' : 'flex-col lg:w-[45%] border-r border-[#E7E1D4] relative'
         }`}>
           
           {/* AI Interviewer Feed */}
-          <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-gray-900 border border-white/10 shadow-lg flex items-center justify-center">
+          <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-[#FFFFFF] border border-[#E7E1D4] shadow-sm flex items-center justify-center">
             {aiVoiceEnabled ? (
               <div className="flex flex-col items-center justify-center relative w-full h-full">
                 {/* Simulated Avatar / Audio Wave */}
                 <div className="relative flex items-center justify-center">
-                  <div className={`absolute inset-0 bg-indigo-500 rounded-full blur-xl opacity-20 transition-all duration-300 ${isAiSpeaking ? 'scale-150 animate-pulse opacity-50' : 'scale-100'}`} />
-                  <div className={`w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 p-1 relative z-10 transition-transform duration-300 ${isAiSpeaking ? 'scale-110' : 'scale-100'}`}>
-                    <div className="w-full h-full bg-gray-900 rounded-full flex items-center justify-center overflow-hidden border-2 border-indigo-500/30">
+                  <div className={`absolute inset-0 bg-[#4F46D8] rounded-full blur-xl opacity-20 transition-all duration-300 ${isAiSpeaking ? 'scale-150 animate-pulse opacity-40' : 'scale-100'}`} />
+                  <div className={`w-24 h-24 rounded-full bg-gradient-to-br from-[#4F46D8] to-purple-600 p-1 relative z-10 transition-transform duration-300 ${isAiSpeaking ? 'scale-110' : 'scale-100'}`}>
+                    <div className="w-full h-full bg-[#FAF8F1] rounded-full flex items-center justify-center overflow-hidden border-2 border-[#4F46D8]/30">
                       <img src="/ai-interviewer.jpg" alt="AI Interviewer" className="w-full h-full object-cover" />
                     </div>
                   </div>
@@ -381,30 +379,30 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
                     [1, 2, 3, 4, 5].map((i) => (
                       <motion.div
                         key={i}
-                        className="w-1.5 bg-indigo-400 rounded-full"
+                        className="w-1.5 bg-[#4F46D8] rounded-full"
                         animate={{ height: ['4px', '20px', '4px'] }}
                         transition={{ repeat: Infinity, duration: 0.5, delay: i * 0.1 }}
                       />
                     ))
                   ) : (
-                    <span className="text-sm text-gray-500 font-medium">AI is listening...</span>
+                    <span className="text-sm text-[#77798B] font-medium">AI is listening...</span>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center text-gray-500">
+              <div className="flex flex-col items-center text-[#77798B]">
                 <VolumeX className="w-8 h-8 mb-2 opacity-50" />
                 <span>Voice Disabled</span>
               </div>
             )}
             
-            <div className="absolute top-4 left-4 glass px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 z-20">
-              <Brain className="w-3.5 h-3.5 text-indigo-400" /> AI Interviewer
+            <div className="absolute top-4 left-4 glass px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 z-20 border border-[#E7E1D4] text-[#171A35]">
+              <Brain className="w-3.5 h-3.5 text-[#4F46D8]" /> AI Interviewer
             </div>
           </div>
 
           {/* User Webcam Feed */}
-          <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-gray-900 border border-white/10 shadow-lg">
+          <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-[#FFFFFF] border border-[#E7E1D4] shadow-sm">
             {cameraActive ? (
               <video 
                 ref={userVideoRef} 
@@ -414,19 +412,19 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
                 className="absolute inset-0 w-full h-full object-cover transform -scale-x-100" 
               />
             ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 gap-3">
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-[#77798B] gap-3 bg-[#FAF8F1]">
                 <VideoOff className="w-8 h-8 opacity-50" />
                 <span className="text-sm">Camera is off</span>
               </div>
             )}
             
             <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between z-20">
-              <div className="glass px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2">
-                <User className="w-3.5 h-3.5 text-emerald-400" /> You
+              <div className="glass px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 border border-[#E7E1D4] text-[#171A35]">
+                <User className="w-3.5 h-3.5 text-[#168575]" /> You
               </div>
               <button
                 onClick={toggleCamera}
-                className="glass p-2 rounded-full hover:bg-white/20 transition-all text-white"
+                className="glass p-2 rounded-full hover:bg-[#F3F0FC] transition-all text-[#171A35] border border-[#E7E1D4]"
               >
                 {cameraActive ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
               </button>
@@ -436,8 +434,8 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
         </div>
 
         {/* RIGHT: Chat & Controls */}
-        <div className={`flex flex-col bg-[#050505] transition-all duration-300 ${
-           isFullscreen ? 'absolute bottom-0 left-0 right-0 z-10 bg-transparent' : 'flex-1'
+        <div className={`flex flex-col bg-[#FAF8F1] transition-all duration-300 ${
+          isFullscreen ? 'absolute bottom-0 left-0 right-0 z-10 bg-transparent' : 'flex-1'
         }`}>
           
           {/* Chat History */}
@@ -453,19 +451,19 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
                     className={`flex items-end gap-3 ${isInterviewer ? '' : 'flex-row-reverse'}`}
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      isInterviewer ? 'bg-indigo-500/20 text-indigo-400' : 'bg-emerald-500/20 text-emerald-400'
+                      isInterviewer ? 'bg-[#F3F0FC] text-[#4F46D8]' : 'bg-[#168575]/15 text-[#168575]'
                     }`}>
                       {isInterviewer ? <Brain className="w-4 h-4" /> : <User className="w-4 h-4" />}
                     </div>
                     <div className={`max-w-[80%] ${isInterviewer ? '' : 'items-end flex flex-col'}`}>
                       <div className={`px-4 py-3 text-sm leading-relaxed ${
                         isInterviewer
-                          ? 'glass border border-white/10 text-gray-200 rounded-2xl rounded-bl-sm'
-                          : 'bg-emerald-600/20 border border-emerald-500/30 text-emerald-50 rounded-2xl rounded-br-sm'
+                          ? 'bg-[#FFFFFF] border border-[#E7E1D4] text-[#171A35] rounded-2xl rounded-bl-sm shadow-sm'
+                          : 'bg-[#F3F0FC] border border-[#4F46D8]/30 text-[#171A35] rounded-2xl rounded-br-sm'
                       }`}>
                         {message.content}
                       </div>
-                      <p className="text-gray-600 text-xs mt-1 px-1">
+                      <p className="text-[#77798B] text-xs mt-1 px-1">
                         {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
@@ -475,15 +473,15 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
               
               {isAiTyping && (
                 <div className="flex items-end gap-3">
-                  <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
-                    <Brain className="w-4 h-4 text-indigo-400" />
+                  <div className="w-8 h-8 rounded-full bg-[#F3F0FC] flex items-center justify-center flex-shrink-0">
+                    <Brain className="w-4 h-4 text-[#4F46D8]" />
                   </div>
-                  <div className="glass border border-white/10 rounded-2xl rounded-bl-sm px-4 py-3">
+                  <div className="bg-[#FFFFFF] border border-[#E7E1D4] rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
                     <div className="flex items-center gap-1">
                       {[0, 1, 2].map((i) => (
                         <motion.div
                           key={i}
-                          className="w-1.5 h-1.5 rounded-full bg-indigo-400"
+                          className="w-1.5 h-1.5 rounded-full bg-[#4F46D8]"
                           animate={{ y: [0, -4, 0] }}
                           transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.15 }}
                         />
@@ -498,7 +496,7 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
 
           {/* Input Area */}
           <div className={`p-4 transition-all duration-300 ${
-             isFullscreen ? 'bg-black/60 backdrop-blur-xl border-t border-white/10' : 'border-t border-white/10 bg-black/40 backdrop-blur-md'
+            isFullscreen ? 'bg-[#FFFFFF]/90 backdrop-blur-xl border-t border-[#E7E1D4]' : 'border-t border-[#E7E1D4] bg-[#FFFFFF] backdrop-blur-md'
           }`}>
             <div className="max-w-3xl mx-auto">
               
@@ -506,7 +504,7 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mb-3 flex items-center justify-center gap-2 text-rose-400 text-sm font-medium"
+                  className="mb-3 flex items-center justify-center gap-2 text-rose-600 text-sm font-medium"
                 >
                   <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
                   Listening... Speak your answer. Click Send when done.
@@ -521,7 +519,7 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
                   className={`p-4 rounded-2xl transition-all flex-shrink-0 ${
                     isListening 
                       ? 'bg-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.4)]' 
-                      : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
+                      : 'bg-[#FAF8F1] border border-[#E7E1D4] text-[#77798B] hover:bg-[#F3F0FC] hover:text-[#4F46D8]'
                   }`}
                   title={isListening ? "Stop listening" : "Dictate answer"}
                 >
@@ -529,13 +527,13 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
                 </button>
 
                 {/* Textarea */}
-                <div className="flex-1 relative glass rounded-2xl border border-white/10 overflow-hidden focus-within:border-indigo-500/50 transition-colors">
+                <div className="flex-1 relative bg-[#FAF8F1] rounded-2xl border border-[#E7E1D4] overflow-hidden focus-within:border-[#4F46D8] transition-colors">
                   <textarea
                     value={answer}
                     onChange={(e) => setAnswer(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Type or dictate your answer..."
-                    className="w-full bg-transparent text-white p-4 pr-14 outline-none resize-none min-h-[56px] max-h-[150px]"
+                    className="w-full bg-transparent text-[#171A35] p-4 pr-14 outline-none resize-none min-h-[56px] max-h-[150px] placeholder-[#77798B]"
                     rows={1}
                     disabled={sending || interview.status === 'completed'}
                   />
@@ -544,7 +542,7 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
                   <button
                     onClick={handleSend}
                     disabled={!answer.trim() || sending || interview.status === 'completed'}
-                    className="absolute right-2 bottom-2 p-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-500 hover:to-violet-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="absolute right-2 bottom-2 p-2.5 rounded-xl bg-[#4F46D8] text-white hover:bg-[#4338CA] disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
                     title="Send answer"
                   >
                     <Send className="w-4 h-4" />
@@ -552,7 +550,7 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
                 </div>
               </div>
               
-              <p className="text-center text-gray-600 text-xs mt-3">
+              <p className="text-center text-[#77798B] text-xs mt-3">
                 Click the microphone to transcribe your voice, then click Send (or press Enter).
               </p>
             </div>

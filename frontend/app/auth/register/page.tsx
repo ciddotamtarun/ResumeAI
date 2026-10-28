@@ -57,32 +57,32 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-8">
+    <div className="min-h-screen bg-[#FAF8F1] flex items-center justify-center p-8">
       {/* Background */}
-      <div className="absolute inset-0 bg-mesh" />
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl" />
+      <div className="absolute inset-0 bg-mesh opacity-40" />
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#4F46D8]/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#6366F1]/5 rounded-full blur-3xl" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="w-full max-w-md relative z-10"
+        className="w-full max-w-md relative z-10 glass rounded-2xl p-8 border border-[#E7E1D4] bg-[#FFFFFF] shadow-lg"
       >
         <div className="flex items-center gap-2 mb-8 justify-center">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center glow-sm">
+          <div className="w-10 h-10 rounded-xl bg-[#4F46D8] flex items-center justify-center glow-sm">
             <Brain className="w-6 h-6 text-white" />
           </div>
           <span className="text-2xl font-bold gradient-text font-['Outfit']">ResumeAI</span>
         </div>
 
-        <h1 className="text-3xl font-black text-white font-['Outfit'] mb-2 text-center">Create your account</h1>
-        <p className="text-gray-400 mb-8 text-center">Start your AI-powered career journey today</p>
+        <h1 className="text-3xl font-black text-[#171A35] font-['Outfit'] mb-2 text-center">Create your account</h1>
+        <p className="text-[#77798B] mb-8 text-center">Start your AI-powered career journey today</p>
 
         {/* Google OAuth */}
         <a
           href="http://localhost:5000/api/auth/google"
-          className="flex items-center justify-center gap-3 w-full glass border border-white/10 hover:border-white/20 text-white rounded-xl py-3 px-4 mb-6 transition-all hover:bg-white/5"
+          className="flex items-center justify-center gap-3 w-full bg-[#FFFFFF] border border-[#E7E1D4] hover:bg-[#F3F0FC] text-[#171A35] rounded-xl py-3 px-4 mb-6 transition-all shadow-sm group"
         >
           <svg viewBox="0 0 24 24" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -94,9 +94,9 @@ export default function RegisterPage() {
         </a>
 
         <div className="flex items-center gap-4 mb-6">
-          <div className="flex-1 h-px bg-white/10" />
-          <span className="text-gray-500 text-sm">or</span>
-          <div className="flex-1 h-px bg-white/10" />
+          <div className="flex-1 h-px bg-[#E7E1D4]" />
+          <span className="text-[#77798B] text-sm">or</span>
+          <div className="flex-1 h-px bg-[#E7E1D4]" />
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -104,84 +104,84 @@ export default function RegisterPage() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl px-4 py-3"
+              className="bg-red-500/10 border border-red-500/30 text-red-600 text-sm rounded-xl px-4 py-3"
             >
               {error}
             </motion.div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
+            <label className="block text-sm font-medium text-[#171A35] mb-2">Full Name</label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#77798B]" />
               <input
                 {...register('name')}
                 id="register-name"
                 type="text"
                 placeholder="John Doe"
-                className="w-full glass border border-white/10 text-white placeholder-gray-600 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                className="w-full bg-[#FFFFFF] border border-[#E7E1D4] text-[#171A35] placeholder-[#77798B] rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-[#4F46D8] focus:ring-2 focus:ring-[#4F46D8]/20 transition-all shadow-sm"
               />
             </div>
-            {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name.message}</p>}
+            {errors.name && <p className="text-red-600 text-xs mt-1">{errors.name.message}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+            <label className="block text-sm font-medium text-[#171A35] mb-2">Email</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#77798B]" />
               <input
                 {...register('email')}
                 id="register-email"
                 type="email"
                 placeholder="you@example.com"
-                className="w-full glass border border-white/10 text-white placeholder-gray-600 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                className="w-full bg-[#FFFFFF] border border-[#E7E1D4] text-[#171A35] placeholder-[#77798B] rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-[#4F46D8] focus:ring-2 focus:ring-[#4F46D8]/20 transition-all shadow-sm"
               />
             </div>
-            {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>}
+            {errors.email && <p className="text-red-600 text-xs mt-1">{errors.email.message}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+            <label className="block text-sm font-medium text-[#171A35] mb-2">Password</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#77798B]" />
               <input
                 {...register('password')}
                 id="register-password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="At least 8 characters"
-                className="w-full glass border border-white/10 text-white placeholder-gray-600 rounded-xl py-3 pl-10 pr-12 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                className="w-full bg-[#FFFFFF] border border-[#E7E1D4] text-[#171A35] placeholder-[#77798B] rounded-xl py-3 pl-10 pr-12 focus:outline-none focus:border-[#4F46D8] focus:ring-2 focus:ring-[#4F46D8]/20 transition-all shadow-sm"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#77798B] hover:text-[#171A35]"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password.message}</p>}
+            {errors.password && <p className="text-red-600 text-xs mt-1">{errors.password.message}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Confirm Password</label>
+            <label className="block text-sm font-medium text-[#171A35] mb-2">Confirm Password</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#77798B]" />
               <input
                 {...register('confirmPassword')}
                 id="register-confirm-password"
                 type={showConfirm ? 'text' : 'password'}
                 placeholder="Repeat your password"
-                className="w-full glass border border-white/10 text-white placeholder-gray-600 rounded-xl py-3 pl-10 pr-12 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                className="w-full bg-[#FFFFFF] border border-[#E7E1D4] text-[#171A35] placeholder-[#77798B] rounded-xl py-3 pl-10 pr-12 focus:outline-none focus:border-[#4F46D8] focus:ring-2 focus:ring-[#4F46D8]/20 transition-all shadow-sm"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirm(!showConfirm)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#77798B] hover:text-[#171A35]"
               >
                 {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            {errors.confirmPassword && <p className="text-red-400 text-xs mt-1">{errors.confirmPassword.message}</p>}
+            {errors.confirmPassword && <p className="text-red-600 text-xs mt-1">{errors.confirmPassword.message}</p>}
           </div>
 
           <motion.button
@@ -190,7 +190,7 @@ export default function RegisterPage() {
             disabled={isLoading}
             whileHover={{ scale: isLoading ? 1 : 1.02 }}
             whileTap={{ scale: isLoading ? 1 : 0.98 }}
-            className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition-all glow-sm"
+            className="w-full bg-[#4F46D8] hover:bg-[#4338CA] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition-all glow-sm shadow-md"
           >
             {isLoading ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Creating account...</>
@@ -200,9 +200,9 @@ export default function RegisterPage() {
           </motion.button>
         </form>
 
-        <p className="text-center text-gray-400 text-sm mt-6">
+        <p className="text-center text-[#77798B] text-sm mt-6">
           Already have an account?{' '}
-          <Link href="/auth/login" className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+          <Link href="/auth/login" className="text-[#4F46D8] hover:underline font-medium transition-colors">
             Sign in
           </Link>
         </p>

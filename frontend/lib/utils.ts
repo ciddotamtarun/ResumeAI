@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getScoreColor(score: number): string {
-  if (score >= 80) return '#10b981'; // green
+  if (score >= 80) return '#168575'; // success indicator
   if (score >= 60) return '#f59e0b'; // yellow
   return '#ef4444'; // red
 }
