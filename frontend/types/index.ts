@@ -44,6 +44,8 @@ export interface Resume {
   userId: string;
   fileName: string;
   fileType: string;
+  rawText?: string;
+  targetRole?: string;
   analysis: ResumeAnalysis;
   improvements: ResumeImprovement[];
   aiProvider: 'openai' | 'gemini';
@@ -52,9 +54,10 @@ export interface Resume {
 }
 
 export interface InterviewMessage {
+  _id?: string;
   role: 'interviewer' | 'candidate';
   content: string;
-  timestamp: string;
+  timestamp: string | Date;
 }
 
 export interface InterviewResults {
@@ -71,6 +74,7 @@ export interface Interview {
   _id: string;
   userId: string;
   resumeId: string | { _id: string; fileName: string; createdAt: string };
+  targetRole?: string;
   status: 'in_progress' | 'completed';
   messages: InterviewMessage[];
   finalResults?: InterviewResults;

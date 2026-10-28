@@ -276,7 +276,7 @@ export default function InterviewVideoPage({ params }: { params: Promise<{ id: s
     // Optimistic update
     setInterview(prev => prev ? {
       ...prev,
-      messages: [...prev.messages, { role: 'candidate', content: userAnswer, timestamp: new Date() }]
+      messages: [...prev.messages, { role: 'candidate', content: userAnswer, timestamp: new Date().toISOString() }]
     } : prev);
 
     try {

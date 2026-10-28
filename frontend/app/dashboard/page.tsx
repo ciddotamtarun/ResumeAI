@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   FileText,
+  FileEdit,
   Upload,
   Mic,
   BarChart3,
@@ -149,17 +150,17 @@ export default function DashboardPage() {
 
   const quickActions = [
     {
+      title: 'Manual Resume Builder',
+      desc: 'Form editor with live preview & PDF download',
+      href: '/resume-builder',
+      icon: FileEdit,
+      iconBg: 'bg-[#4F46D8]',
+    },
+    {
       title: 'Upload New Resume',
       desc: 'Get instant AI analysis & ATS score',
       href: '/resume-studio',
       icon: Upload,
-      iconBg: 'bg-[#4F46D8]',
-    },
-    {
-      title: 'Browse Resumes',
-      desc: `${resumes.length} resume${resumes.length !== 1 ? 's' : ''} stored & analyzed`,
-      href: '/history',
-      icon: BarChart3,
       iconBg: 'bg-[#4F46D8]',
     },
     {

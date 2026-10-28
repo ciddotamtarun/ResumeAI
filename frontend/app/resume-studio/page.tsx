@@ -18,6 +18,7 @@ import {
   ArrowRight,
   Clock,
   Sparkles,
+  FileEdit,
   ChevronRight,
   ShieldCheck,
   RotateCcw,
@@ -350,6 +351,19 @@ export default function ResumeStudioPage() {
                   </>
                 )}
               </button>
+
+              <div className="text-center pt-2 border-t border-[#E7E1D4]/60">
+                <p className="text-xs text-[#77798B]">
+                  Prefer building a tailored resume from scratch?{' '}
+                  <Link
+                    href="/resume-builder"
+                    className="text-[#4F46D8] font-bold hover:underline inline-flex items-center gap-1"
+                  >
+                    <FileEdit className="w-3.5 h-3.5" />
+                    Open Manual Resume Builder
+                  </Link>
+                </p>
+              </div>
             </form>
           </div>
         </div>

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion, useSpring, useTransform, useMotionValue, animate } from 'framer-motion';
 import {
   FileText,
+  FileEdit,
   CheckCircle,
   AlertTriangle,
   Tag,
@@ -234,9 +235,15 @@ export default function ResumeAnalysisPage({ params }: { params: Promise<{ id: s
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10"
         >
           <div>
-            <Link href="/dashboard" className="flex items-center gap-1.5 text-[#77798B] hover:text-[#171A35] text-sm mb-3 transition-colors">
-              <ArrowLeft className="w-4 h-4" /> Back to Dashboard
-            </Link>
+            <div className="flex items-center gap-3 mb-3 flex-wrap">
+              <Link href="/dashboard" className="flex items-center gap-1.5 text-[#77798B] hover:text-[#171A35] text-sm transition-colors">
+                <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+              </Link>
+              <span className="text-[#E7E1D4]">•</span>
+              <Link href="/resume-builder" className="flex items-center gap-1.5 text-[#4F46D8] hover:underline text-sm font-semibold transition-colors">
+                <FileEdit className="w-3.5 h-3.5" /> Resume Builder
+              </Link>
+            </div>
             <div className="flex items-center gap-3 flex-wrap">
               <FileText className="w-5 h-5 text-[#4F46D8]" />
               <h1 className="text-2xl font-black text-[#171A35] font-['Outfit'] truncate max-w-md">{resume.fileName}</h1>
