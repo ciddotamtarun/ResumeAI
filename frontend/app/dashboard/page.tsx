@@ -159,7 +159,7 @@ export default function DashboardPage() {
     {
       title: 'Upload New Resume',
       desc: 'Get instant AI analysis & ATS score',
-      href: '/resume-studio',
+      href: '/resume/role',
       icon: Upload,
       iconBg: 'bg-[#4F46D8]',
     },
@@ -281,7 +281,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-[#171A35] font-['Outfit']">Recent Resumes</h2>
             <Link
-              href="/resume-studio"
+              href="/resume/role"
               className="text-[#4F46D8] text-xs font-semibold hover:underline transition-colors"
             >
               Upload new +
@@ -301,7 +301,7 @@ export default function DashboardPage() {
               <p className="text-[#77798B] text-xs mb-4">
                 Upload your resume in PDF, DOCX, or TXT format to generate your first AI score.
               </p>
-              <Link href="/resume-studio">
+              <Link href="/resume/role">
                 <button className="bg-[#4F46D8] hover:bg-[#4338CA] text-white px-4 py-2 rounded-xl text-xs font-semibold transition-colors shadow-xs">
                   Upload Resume
                 </button>

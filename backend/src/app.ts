@@ -10,6 +10,9 @@ import authRoutes from './routes/auth.routes';
 import resumeRoutes from './routes/resume.routes';
 import interviewRoutes from './routes/interview.routes';
 import heygenRoutes from './routes/heygen.routes';
+import assessmentRoutes from './routes/assessment.routes';
+import builderRoutes from './routes/builder.routes';
+import roadmapRoutes from './routes/roadmap.routes';
 
 const app = express();
 const normalizeBaseUrl = (value: string | undefined, fallback: string): string => {
@@ -48,30 +51,54 @@ passport.use(
     },
     async (_accessToken, _refreshToken, profile, done) => {
       try {
-        let user = await User.findOne({ googleId: profile.id });
+        const googleId = profile.id;
+        const email = profile.emails?.[0]?.value?.toLowerCase().trim();
+        const name = (profile.displayName || profile.name?.givenName || email?.split('@')[0] || 'User').trim();
+        const avatar = profile.photos?.[0]?.value;
+
+        if (!googleId) {
+          console.warn('[Auth] Google profile missing subject ID');
+          return done(null, false, { message: 'Missing Google ID from OAuth profile' });
+        }
+
+        if (!email) {
+          console.warn('[Auth] Google profile missing email address');
+          return done(null, false, { message: 'Google account does not provide an email address' });
+        }
+
+        // 1. Check if user already exists with this Google subject ID
+        let user = await User.findOne({ googleId });
         if (!user) {
-          const email = profile.emails?.[0]?.value;
-          if (email) {
-            user = await User.findOne({ email });
-          }
-          if (!user) {
-            user = await User.create({
-              name: profile.displayName,
-              email: profile.emails?.[0]?.value,
-              googleId: profile.id,
-              avatar: profile.photos?.[0]?.value,
-            });
-          } else {
-            user.googleId = profile.id;
-            if (!user.avatar && profile.photos?.[0]?.value) {
-              user.avatar = profile.photos[0].value;
+          // 2. Check if user exists with this email (e.g. registered via email/password)
+          user = await User.findOne({ email });
+          if (user) {
+            // Link Google ID securely to existing account
+            user.googleId = googleId;
+            if (!user.avatar && avatar) {
+              user.avatar = avatar;
             }
+            await user.save();
+          } else {
+            // 3. Create new user for first-time Google sign-in
+            user = await User.create({
+              name,
+              email,
+              googleId,
+              avatar,
+            });
+          }
+        } else {
+          // Update avatar if not set yet
+          if (!user.avatar && avatar) {
+            user.avatar = avatar;
             await user.save();
           }
         }
+
         return done(null, user);
-      } catch (error) {
-        return done(error as Error, undefined);
+      } catch (error: any) {
+        console.error('[Auth] Google OAuth error during user lookup/creation:', error?.message || error);
+        return done(null, false, { message: error?.message || 'Database error during Google sign in' });
       }
     }
   )
@@ -84,6 +111,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/resume', resumeRoutes);
 app.use('/api/interview', interviewRoutes);
 app.use('/api/heygen', heygenRoutes);
+app.use('/api/assessment', assessmentRoutes);
+app.use('/api/builder', builderRoutes);
+app.use('/api/roadmap', roadmapRoutes);
 
 // Health check
 app.get('/health', (_req, res) => {

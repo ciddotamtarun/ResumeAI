@@ -36,7 +36,7 @@ export interface IResume extends Document {
   targetRole: string;
   analysis: Analysis;
   improvements: Improvement[];
-  aiProvider: 'openai' | 'gemini';
+  aiProvider: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -73,7 +73,7 @@ const ResumeSchema = new Schema<IResume>(
         reason: String,
       },
     ],
-    aiProvider: { type: String, enum: ['openai', 'gemini'], default: 'gemini' },
+    aiProvider: { type: String, default: 'openrouter' },
   },
   { timestamps: true }
 );

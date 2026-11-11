@@ -36,8 +36,7 @@ Evaluate this resume specifically for that role:
 `
     : '';
 
-  const prompt = `${roleContext}
-Analyze the following resume comprehensively and return ONLY a valid JSON object with this exact structure (no markdown, no code blocks, just raw JSON):
+  const prompt = `${roleContext}Analyze the following resume comprehensively and return ONLY a valid JSON object with this exact structure:
 {
   "overallScore": <integer 0-100>,
   "sections": {
@@ -53,6 +52,8 @@ Analyze the following resume comprehensively and return ONLY a valid JSON object
   "keywords": ["<keyword1>", "<keyword2>", "<keyword3>"],
   "atsCompatibility": <integer 0-100>
 }
+
+CRITICAL: Return valid raw JSON only. Do not wrap in markdown or backticks. Do not include commentary or introductory text.
 
 RESUME:
 ${resumeText.substring(0, 6000)}`;
@@ -70,7 +71,8 @@ export async function generateImprovements(
     ? `Target role: **${targetRole}**. Every improvement suggestion must be focused on making this resume more competitive for a ${targetRole} position — add missing ${targetRole} keywords, highlight relevant experience, fix skill gaps.\n`
     : '';
 
-  const prompt = `${roleContext}Based on this resume, provide 6 highly specific improvement suggestions. Return a JSON object with an "improvements" array using this structure (no markdown):
+  const prompt = `${roleContext}Based on this resume, provide 6 highly specific improvement suggestions.
+Return ONLY a valid JSON object with an "improvements" array matching this exact schema:
 {
   "improvements": [
     {
@@ -81,6 +83,8 @@ export async function generateImprovements(
     }
   ]
 }
+
+CRITICAL: Return valid raw JSON only. Do not wrap in markdown or backticks. Do not include commentary or introductory text.
 
 RESUME:
 ${resumeText.substring(0, 6000)}`;
@@ -175,24 +179,55 @@ function normalizeImprovement(value: unknown): {
 }
 
 function parseJSON(response: string, label: string): unknown {
-  const fencedBlocks = [...response.matchAll(/```(?:json)?[ \t]*\r?\n?([\s\S]*?)```/gi)]
+  if (!response || typeof response !== 'string' || !response.trim()) {
+    throw new AIServiceError(
+      `AI returned an empty or invalid JSON response for ${label}. Please retry the request.`,
+      502
+    );
+  }
+
+  // Remove reasoning tags e.g. <think>...</think> if included by reasoning models
+  let cleanText = response.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+  if (!cleanText) cleanText = response.trim();
+
+  const fencedBlocks = [...cleanText.matchAll(/```(?:json)?[ \t]*\r?\n?([\s\S]*?)```/gi)]
     .map((match) => match[1].trim())
     .filter(Boolean);
-  const candidates = [...fencedBlocks, response.trim()];
+  const candidates = [...fencedBlocks, cleanText];
 
   for (const candidate of candidates) {
     try {
-      return JSON.parse(candidate);
+      const parsed = JSON.parse(candidate);
+      if (parsed !== null && typeof parsed === 'object') {
+        return parsed;
+      }
     } catch {
       const extracted = extractJSONValue(candidate);
       if (!extracted) continue;
       try {
-        return JSON.parse(extracted);
+        const parsed = JSON.parse(extracted);
+        if (parsed !== null && typeof parsed === 'object') {
+          return parsed;
+        }
       } catch {
-        continue;
+        // Try cleaning trailing commas e.g. {"a": 1,}
+        const cleaned = extracted.replace(/,\s*([}\]])/g, '$1');
+        try {
+          const parsed = JSON.parse(cleaned);
+          if (parsed !== null && typeof parsed === 'object') {
+            return parsed;
+          }
+        } catch {
+          continue;
+        }
       }
     }
   }
+
+  console.error(`[ResumeService] parseJSON: failed to parse JSON for ${label}`, {
+    responseLength: response.length,
+    responsePreview: response.slice(0, 150),
+  });
 
   throw new AIServiceError(
     `AI returned an empty or invalid JSON response for ${label}. Please retry the request.`,

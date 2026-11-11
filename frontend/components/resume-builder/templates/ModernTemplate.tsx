@@ -1,119 +1,73 @@
 'use client';
 
 import React from 'react';
-import { ResumeBuilderData } from '@/types/builder';
+import { ResumeData } from '@/types/builder';
+import { Mail, Phone, MapPin, Globe, Link as LinkIcon, Code } from 'lucide-react';
 
 interface TemplateProps {
-  data: ResumeBuilderData;
-}
-
-function formatPeriod(start?: string, end?: string, current?: boolean) {
-  if (!start && !end && !current) return '';
-  const s = start || '';
-  const e = current ? 'Present' : end || '';
-  if (s && e) return `${s} – ${e}`;
-  return s || e;
+  data: ResumeData;
 }
 
 export default function ModernTemplate({ data }: TemplateProps) {
-  const { contact, summary, experience, education, projects, skills, certifications, awards, volunteer, languages } = data;
+  const { personalInfo: p, summary, experience, projects, education, skills, additional, sectionOrder } = data;
 
-  const renderSection = (sectionKey: string) => {
-    if (!data.enabledSections[sectionKey as keyof typeof data.enabledSections]) return null;
+  const contactItems = [
+    p.email && { icon: Mail, text: p.email, href: `mailto:${p.email}` },
+    p.phone && { icon: Phone, text: p.phone, href: `tel:${p.phone}` },
+    p.location && { icon: MapPin, text: p.location },
+    p.linkedin && { icon: LinkIcon, text: p.linkedin.replace(/^https?:\/\/(www\.)?/, ''), href: p.linkedin.startsWith('http') ? p.linkedin : `https://${p.linkedin}` },
+    p.github && { icon: Code, text: p.github.replace(/^https?:\/\/(www\.)?/, ''), href: p.github.startsWith('http') ? p.github : `https://${p.github}` },
+    p.website && { icon: Globe, text: p.website.replace(/^https?:\/\/(www\.)?/, ''), href: p.website.startsWith('http') ? p.website : `https://${p.website}` },
+  ].filter(Boolean) as Array<{ icon: any; text: string; href?: string }>;
 
-    switch (sectionKey) {
+  const renderSection = (key: string) => {
+    switch (key) {
       case 'summary':
         if (!summary?.trim()) return null;
         return (
-          <div key="summary" className="mb-4">
+          <section key="summary" className="mb-4 break-inside-avoid">
             <div className="flex items-center gap-2 mb-2">
-              <span className="w-1.5 h-4 bg-[#4F46D8] rounded-full" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-[#171A35]">
-                Summary
+              <span className="w-1.5 h-3.5 bg-[#4F46D8] rounded-full"></span>
+              <h2 className="text-[12px] font-bold text-[#171A35] uppercase tracking-wider">
+                Professional Summary
               </h2>
-              <div className="flex-1 h-[1px] bg-[#E7E1D4]" />
             </div>
-            <p className="text-[11px] leading-relaxed text-[#4A4E69]">
+            <p className="text-[10.5px] leading-relaxed text-[#4A4D68]">
               {summary}
             </p>
-          </div>
+          </section>
         );
 
       case 'experience':
-        if (!experience || experience.length === 0) return null;
+        if (!experience?.length) return null;
         return (
-          <div key="experience" className="mb-4">
-            <div className="flex items-center gap-2 mb-2.5">
-              <span className="w-1.5 h-4 bg-[#4F46D8] rounded-full" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-[#171A35]">
-                Experience
+          <section key="experience" className="mb-4">
+            <div className="flex items-center gap-2 mb-2 break-inside-avoid">
+              <span className="w-1.5 h-3.5 bg-[#4F46D8] rounded-full"></span>
+              <h2 className="text-[12px] font-bold text-[#171A35] uppercase tracking-wider">
+                Work Experience
               </h2>
-              <div className="flex-1 h-[1px] bg-[#E7E1D4]" />
             </div>
             <div className="space-y-3">
               {experience.map((exp) => (
-                <div key={exp.id} className="relative pl-3 border-l-2 border-[#E7E1D4] hover:border-[#4F46D8]/40 transition-colors">
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-[11.5px] font-bold text-[#171A35]">{exp.jobTitle || 'Job Title'}</span>
-                    <span className="text-[10px] font-medium text-[#77798B] bg-[#F3F0FC] px-1.5 py-0.5 rounded text-[#4F46D8]">
-                      {formatPeriod(exp.startDate, exp.endDate, exp.current)}
+                <div key={exp.id} className="break-inside-avoid relative pl-3 border-l-2 border-[#E7E1D4]">
+                  <div className="flex justify-between items-start text-[11px]">
+                    <div>
+                      <span className="font-bold text-[#171A35]">{exp.title}</span>
+                      <span className="text-[#4F46D8] font-medium ml-1.5">@ {exp.company}</span>
+                    </div>
+                    <span className="text-[10px] text-[#77798B] font-medium bg-[#F3F0FC] px-2 py-0.5 rounded">
+                      {exp.startDate} — {exp.current ? 'Present' : exp.endDate}
                     </span>
                   </div>
-                  <div className="text-[10.5px] font-medium text-[#4F46D8] mb-1">
-                    {exp.company}
-                    {exp.location && <span className="text-[#77798B] font-normal"> • {exp.location}</span>}
-                    {exp.employmentType && <span className="text-[#77798B] font-normal"> • {exp.employmentType}</span>}
-                  </div>
-                  {exp.bullets && exp.bullets.filter(Boolean).length > 0 && (
-                    <ul className="list-disc ml-3.5 space-y-0.5 text-[#2D3142] text-[10.5px] leading-snug">
-                      {exp.bullets.filter(Boolean).map((bullet, i) => (
-                        <li key={i}>{bullet}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-
-      case 'projects':
-        if (!projects || projects.length === 0) return null;
-        return (
-          <div key="projects" className="mb-4">
-            <div className="flex items-center gap-2 mb-2.5">
-              <span className="w-1.5 h-4 bg-[#4F46D8] rounded-full" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-[#171A35]">
-                Key Projects
-              </h2>
-              <div className="flex-1 h-[1px] bg-[#E7E1D4]" />
-            </div>
-            <div className="space-y-2.5">
-              {projects.map((proj) => (
-                <div key={proj.id} className="pl-3 border-l-2 border-[#E7E1D4]">
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-[11px] font-bold text-[#171A35]">{proj.title}</span>
-                    <span className="text-[9.5px] text-[#77798B] truncate max-w-[200px]">
-                      {proj.projectUrl || proj.githubUrl}
-                    </span>
-                  </div>
-                  {proj.technologies && proj.technologies.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-0.5 mb-1">
-                      {proj.technologies.map((t, i) => (
-                        <span key={i} className="text-[9px] font-medium px-1.5 py-0.2 rounded bg-[#FAF8F1] border border-[#E7E1D4] text-[#4F46D8]">
-                          {t}
-                        </span>
-                      ))}
+                  {exp.location && (
+                    <div className="text-[10px] text-[#77798B] mt-0.5 mb-1.5">
+                      {exp.location}{exp.employmentType ? ` • ${exp.employmentType}` : ''}
                     </div>
                   )}
-                  {proj.description && (
-                    <p className="text-[10.5px] text-[#2D3142] leading-snug">
-                      {proj.description}
-                    </p>
-                  )}
-                  {proj.bullets && proj.bullets.filter(Boolean).length > 0 && (
-                    <ul className="list-disc ml-3.5 mt-0.5 space-y-0.5 text-[#2D3142] text-[10.5px] leading-snug">
-                      {proj.bullets.filter(Boolean).map((b, i) => (
+                  {exp.bullets?.length > 0 && (
+                    <ul className="list-disc ml-3.5 space-y-1 text-[10.5px] text-[#2C2F48] leading-relaxed">
+                      {exp.bullets.map((b, i) => (
                         <li key={i}>{b}</li>
                       ))}
                     </ul>
@@ -121,181 +75,190 @@ export default function ModernTemplate({ data }: TemplateProps) {
                 </div>
               ))}
             </div>
-          </div>
+          </section>
         );
 
-      case 'skills':
-        const tech = skills?.technical?.filter(Boolean) || [];
-        const soft = skills?.soft?.filter(Boolean) || [];
-        if (tech.length === 0 && soft.length === 0) return null;
+      case 'projects':
+        if (!projects?.length) return null;
         return (
-          <div key="skills" className="mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-1.5 h-4 bg-[#4F46D8] rounded-full" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-[#171A35]">
-                Core Competencies
+          <section key="projects" className="mb-4">
+            <div className="flex items-center gap-2 mb-2 break-inside-avoid">
+              <span className="w-1.5 h-3.5 bg-[#4F46D8] rounded-full"></span>
+              <h2 className="text-[12px] font-bold text-[#171A35] uppercase tracking-wider">
+                Key Projects
               </h2>
-              <div className="flex-1 h-[1px] bg-[#E7E1D4]" />
             </div>
-            <div className="text-[10.5px] space-y-1.5">
-              {tech.length > 0 && (
-                <div>
-                  <span className="font-semibold text-[#171A35] text-[10px] uppercase tracking-wide block mb-1">
-                    Technical Stack:
-                  </span>
-                  <div className="flex flex-wrap gap-1">
-                    {tech.map((skill, i) => (
-                      <span key={i} className="text-[10px] px-2 py-0.5 rounded-md bg-[#F3F0FC] text-[#4F46D8] font-medium">
-                        {skill}
-                      </span>
-                    ))}
+            <div className="space-y-2.5">
+              {projects.map((proj) => (
+                <div key={proj.id} className="break-inside-avoid bg-[#FAF8F1]/60 p-2.5 rounded-lg border border-[#E7E1D4]/60">
+                  <div className="flex justify-between items-baseline text-[11px]">
+                    <span className="font-bold text-[#171A35]">{proj.title}</span>
+                    <div className="flex items-center gap-2 text-[10px]">
+                      {proj.projectUrl && (
+                        <a href={proj.projectUrl} target="_blank" rel="noreferrer" className="text-[#4F46D8] hover:underline font-medium">
+                          Demo ↗
+                        </a>
+                      )}
+                      {proj.githubUrl && (
+                        <a href={proj.githubUrl} target="_blank" rel="noreferrer" className="text-[#77798B] hover:text-[#171A35]">
+                          GitHub ↗
+                        </a>
+                      )}
+                    </div>
                   </div>
+                  {proj.technologies?.length > 0 && (
+                    <div className="flex flex-wrap gap-1 my-1">
+                      {proj.technologies.map((t, idx) => (
+                        <span key={idx} className="text-[9px] bg-white border border-[#E7E1D4] text-[#4F46D8] px-1.5 py-0.2 rounded font-medium">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {proj.description && (
+                    <p className="text-[10px] text-[#4A4D68] mb-1 leading-relaxed">
+                      {proj.description}
+                    </p>
+                  )}
+                  {proj.bullets?.length ? (
+                    <ul className="list-disc ml-3.5 space-y-0.5 text-[9.5px] text-[#2C2F48] leading-relaxed">
+                      {proj.bullets.map((b, i) => (
+                        <li key={i}>{b}</li>
+                      ))}
+                    </ul>
+                  ) : null}
                 </div>
-              )}
-              {soft.length > 0 && (
-                <div className="mt-1.5">
-                  <span className="font-semibold text-[#171A35] text-[10px] uppercase tracking-wide block mb-1">
-                    Leadership & Methodologies:
-                  </span>
-                  <div className="flex flex-wrap gap-1">
-                    {soft.map((skill, i) => (
-                      <span key={i} className="text-[10px] px-2 py-0.5 rounded-md bg-[#FAF8F1] border border-[#E7E1D4] text-[#171A35]">
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+              ))}
             </div>
-          </div>
+          </section>
         );
 
       case 'education':
-        if (!education || education.length === 0) return null;
+        if (!education?.length) return null;
         return (
-          <div key="education" className="mb-4">
+          <section key="education" className="mb-4 break-inside-avoid">
             <div className="flex items-center gap-2 mb-2">
-              <span className="w-1.5 h-4 bg-[#4F46D8] rounded-full" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-[#171A35]">
+              <span className="w-1.5 h-3.5 bg-[#4F46D8] rounded-full"></span>
+              <h2 className="text-[12px] font-bold text-[#171A35] uppercase tracking-wider">
                 Education
               </h2>
-              <div className="flex-1 h-[1px] bg-[#E7E1D4]" />
             </div>
             <div className="space-y-2">
               {education.map((edu) => (
-                <div key={edu.id} className="pl-3 border-l-2 border-[#E7E1D4]">
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-[11px] font-bold text-[#171A35]">{edu.institution}</span>
-                    <span className="text-[10px] text-[#77798B]">
-                      {formatPeriod(edu.startDate, edu.endDate, edu.current)}
-                    </span>
+                <div key={edu.id} className="flex justify-between items-baseline text-[11px]">
+                  <div>
+                    <span className="font-bold text-[#171A35]">{edu.institution}</span>
+                    <div className="text-[10px] text-[#4A4D68]">
+                      {edu.degree} in {edu.fieldOfStudy}
+                      {edu.gpa ? ` • GPA: ${edu.gpa}` : ''}
+                    </div>
                   </div>
-                  <div className="text-[10.5px] text-[#4F46D8] font-medium">
-                    {edu.degree} {edu.fieldOfStudy ? `in ${edu.fieldOfStudy}` : ''}
-                    {edu.gpa && <span className="text-[#77798B] font-normal"> • GPA: {edu.gpa}</span>}
-                  </div>
-                  {edu.description && (
-                    <p className="text-[10px] text-[#77798B] mt-0.5">{edu.description}</p>
-                  )}
+                  <span className="text-[10px] text-[#77798B]">
+                    {edu.startDate} — {edu.endDate}
+                  </span>
                 </div>
               ))}
             </div>
-          </div>
+          </section>
+        );
+
+      case 'skills':
+        const tech = skills?.technical || [];
+        const soft = skills?.soft || [];
+        if (!tech.length && !soft.length) return null;
+        return (
+          <section key="skills" className="mb-4 break-inside-avoid">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-1.5 h-3.5 bg-[#4F46D8] rounded-full"></span>
+              <h2 className="text-[12px] font-bold text-[#171A35] uppercase tracking-wider">
+                Skills & Technologies
+              </h2>
+            </div>
+            <div className="space-y-1.5 text-[10px]">
+              {tech.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="font-bold text-[#171A35] mr-1">Technical:</span>
+                  {tech.map((s) => (
+                    <span key={s.id} className="bg-[#F3F0FC] text-[#4F46D8] px-2 py-0.5 rounded text-[9.5px] font-medium border border-[#E7E1D4]">
+                      {s.name}
+                      {s.level ? ` (${s.level})` : ''}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {soft.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="font-bold text-[#171A35] mr-1">Soft Skills:</span>
+                  {soft.map((s) => (
+                    <span key={s.id} className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[9.5px]">
+                      {s.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
         );
 
       case 'certifications':
-        if (!certifications || certifications.length === 0) return null;
+        if (!additional?.enabledSections?.certifications || !additional?.certifications?.length) return null;
         return (
-          <div key="certifications" className="mb-4">
+          <section key="certifications" className="mb-4 break-inside-avoid">
             <div className="flex items-center gap-2 mb-2">
-              <span className="w-1.5 h-4 bg-[#4F46D8] rounded-full" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-[#171A35]">
+              <span className="w-1.5 h-3.5 bg-[#4F46D8] rounded-full"></span>
+              <h2 className="text-[12px] font-bold text-[#171A35] uppercase tracking-wider">
                 Certifications
               </h2>
-              <div className="flex-1 h-[1px] bg-[#E7E1D4]" />
             </div>
-            <div className="grid grid-cols-2 gap-2 text-[10.5px]">
-              {certifications.map((c) => (
-                <div key={c.id} className="p-1.5 rounded-lg bg-[#FAF8F1] border border-[#E7E1D4]">
-                  <div className="font-semibold text-[#171A35] text-[10.5px] leading-tight">{c.name}</div>
-                  <div className="text-[9.5px] text-[#77798B] mt-0.5">{c.issuer} {c.date ? `• ${c.date}` : ''}</div>
+            <div className="space-y-1 text-[10px] text-[#2C2F48]">
+              {additional.certifications.map((c) => (
+                <div key={c.id} className="flex justify-between">
+                  <span className="font-semibold text-[#171A35]">{c.name} — <span className="text-[#77798B] font-normal">{c.issuer}</span></span>
+                  <span className="text-[#77798B]">{c.date}</span>
                 </div>
               ))}
             </div>
-          </div>
+          </section>
         );
 
-      case 'awards':
-        if (!awards || awards.length === 0) return null;
+      case 'achievements':
+        if (!additional?.enabledSections?.achievements || !additional?.achievements?.length) return null;
         return (
-          <div key="awards" className="mb-4">
+          <section key="achievements" className="mb-4 break-inside-avoid">
             <div className="flex items-center gap-2 mb-2">
-              <span className="w-1.5 h-4 bg-[#4F46D8] rounded-full" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-[#171A35]">
-                Honors & Awards
+              <span className="w-1.5 h-3.5 bg-[#4F46D8] rounded-full"></span>
+              <h2 className="text-[12px] font-bold text-[#171A35] uppercase tracking-wider">
+                Achievements
               </h2>
-              <div className="flex-1 h-[1px] bg-[#E7E1D4]" />
             </div>
-            <div className="space-y-1.5 text-[10.5px]">
-              {awards.map((a) => (
-                <div key={a.id} className="pl-3 border-l-2 border-[#E7E1D4]">
-                  <div className="flex justify-between items-baseline">
-                    <span className="font-bold text-[#171A35]">{a.title}</span>
-                    <span className="text-[10px] text-[#77798B]">{a.date}</span>
-                  </div>
-                  <div className="text-[10px] text-[#4F46D8]">{a.issuer}</div>
-                  {a.description && <p className="text-[10px] text-[#4A4E69] mt-0.5">{a.description}</p>}
-                </div>
+            <ul className="list-disc ml-3.5 space-y-0.5 text-[10px] text-[#2C2F48]">
+              {additional.achievements.map((a) => (
+                <li key={a.id}>
+                  <strong className="text-[#171A35]">{a.title}:</strong> {a.description}
+                </li>
               ))}
-            </div>
-          </div>
-        );
-
-      case 'volunteer':
-        if (!volunteer || volunteer.length === 0) return null;
-        return (
-          <div key="volunteer" className="mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-1.5 h-4 bg-[#4F46D8] rounded-full" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-[#171A35]">
-                Volunteer
-              </h2>
-              <div className="flex-1 h-[1px] bg-[#E7E1D4]" />
-            </div>
-            <div className="space-y-2 text-[10.5px]">
-              {volunteer.map((v) => (
-                <div key={v.id} className="pl-3 border-l-2 border-[#E7E1D4]">
-                  <div className="flex justify-between items-baseline">
-                    <span className="font-bold text-[#171A35]">{v.role}</span>
-                    <span className="text-[10px] text-[#77798B]">{formatPeriod(v.startDate, v.endDate, v.current)}</span>
-                  </div>
-                  <div className="text-[10px] text-[#4F46D8]">{v.organization}</div>
-                  {v.description && <p className="text-[10px] text-[#4A4E69] mt-0.5">{v.description}</p>}
-                </div>
-              ))}
-            </div>
-          </div>
+            </ul>
+          </section>
         );
 
       case 'languages':
-        if (!languages || languages.length === 0) return null;
+        if (!additional?.enabledSections?.languages || !additional?.languages?.length) return null;
         return (
-          <div key="languages" className="mb-4">
+          <section key="languages" className="mb-4 break-inside-avoid">
             <div className="flex items-center gap-2 mb-2">
-              <span className="w-1.5 h-4 bg-[#4F46D8] rounded-full" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-[#171A35]">
+              <span className="w-1.5 h-3.5 bg-[#4F46D8] rounded-full"></span>
+              <h2 className="text-[12px] font-bold text-[#171A35] uppercase tracking-wider">
                 Languages
               </h2>
-              <div className="flex-1 h-[1px] bg-[#E7E1D4]" />
             </div>
-            <div className="flex flex-wrap gap-2 text-[10.5px]">
-              {languages.map((l) => (
-                <span key={l.id} className="px-2 py-0.5 rounded-full bg-[#FAF8F1] border border-[#E7E1D4] text-[#171A35]">
-                  <strong className="text-[#4F46D8]">{l.language}</strong> ({l.proficiency})
+            <div className="flex flex-wrap gap-2 text-[10px]">
+              {additional.languages.map((l) => (
+                <span key={l.id} className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+                  <strong>{l.language}</strong> ({l.proficiency})
                 </span>
               ))}
             </div>
-          </div>
+          </section>
         );
 
       default:
@@ -303,46 +266,47 @@ export default function ModernTemplate({ data }: TemplateProps) {
     }
   };
 
-  const contactItems = [
-    contact.email,
-    contact.phone,
-    contact.location,
-    contact.linkedin,
-    contact.github,
-    contact.website,
-  ].filter(Boolean);
-
   return (
-    <div className="w-full bg-white text-[#171A35] p-8 sm:p-10 font-sans leading-normal select-text">
-      {/* Modern Header */}
-      <div className="border-b-2 border-[#4F46D8]/20 pb-4 mb-5">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+    <div className="font-sans text-[#171A35] p-8 sm:p-12 bg-white max-w-[800px] mx-auto leading-normal">
+      {/* Header */}
+      <header className="mb-5 pb-4 border-b border-[#E7E1D4]">
+        <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-[#171A35] tracking-tight">
-              {contact.fullName || 'Candidate Name'}
+            <h1 className="text-2xl font-bold tracking-tight text-[#171A35]">
+              {p.fullName || 'Your Name'}
             </h1>
-            {contact.jobTitle && (
-              <p className="text-sm font-semibold text-[#4F46D8] mt-0.5">
-                {contact.jobTitle}
-              </p>
+            {p.jobTitle && (
+              <div className="text-[12.5px] font-semibold text-[#4F46D8] mt-0.5">
+                {p.jobTitle}
+              </div>
             )}
           </div>
         </div>
 
+        {/* Contact info pills */}
         {contactItems.length > 0 && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] text-[#77798B] mt-3">
-            {contactItems.map((item, idx) => (
-              <React.Fragment key={idx}>
-                {idx > 0 && <span className="text-[#E7E1D4]">•</span>}
-                <span className="hover:text-[#171A35] transition-colors">{item}</span>
-              </React.Fragment>
-            ))}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2.5 text-[10px] text-[#77798B]">
+            {contactItems.map((item, idx) => {
+              const Icon = item.icon;
+              return (
+                <span key={idx} className="flex items-center gap-1">
+                  <Icon className="w-3 h-3 text-[#4F46D8]" />
+                  {item.href ? (
+                    <a href={item.href} className="hover:text-[#4F46D8] hover:underline">
+                      {item.text}
+                    </a>
+                  ) : (
+                    <span>{item.text}</span>
+                  )}
+                </span>
+              );
+            })}
           </div>
         )}
-      </div>
+      </header>
 
-      {/* Render sections in specified order */}
-      {data.sectionOrder.map((sectionKey) => renderSection(sectionKey))}
+      {/* Ordered Sections */}
+      <div>{sectionOrder.map((key) => renderSection(key))}</div>
     </div>
   );
 }

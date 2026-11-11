@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, Menu, X, LogOut, LayoutDashboard, ChevronDown, FileText } from 'lucide-react';
+import { Brain, Menu, X, LogOut, LayoutDashboard, ChevronDown, FileText, FileEdit } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -31,7 +31,8 @@ export default function Navbar() {
   const navLinks = isAuthenticated
     ? [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/resume/upload', label: 'Upload Resume', icon: FileText },
+        { href: '/resume-builder', label: 'Resume Builder', icon: FileEdit },
+        { href: '/resume/role', label: 'Upload Resume', icon: FileText },
       ]
     : [
         { href: '/#features', label: 'Features' },

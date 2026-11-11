@@ -1,7 +1,13 @@
 import OpenAI from 'openai';
 
 const DEFAULT_OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
-const DEFAULT_OPENROUTER_MODEL = 'gpt-4o-mini';
+const DEFAULT_OPENROUTER_MODEL = 'openrouter/auto';
+const FALLBACK_MODELS = [
+  'openrouter/auto',
+  'deepseek/deepseek-chat',
+  'meta-llama/llama-3.3-70b-instruct',
+  'mistralai/mistral-small-24b-instruct-2501',
+];
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 500;
 
@@ -48,7 +54,7 @@ const getClient = (): OpenAI => {
     apiKey,
     baseURL,
     maxRetries: 0,
-    timeout: 30_000,
+    timeout: 90_000,
   });
 };
 
@@ -191,8 +197,9 @@ export function extractCompletionText(response: unknown): string {
     throw new EmptyCompletionError('OpenRouter completion did not include a message.');
   }
 
-  const content = (message as { content?: unknown }).content;
-  let text: string;
+  const msgRecord = message as Record<string, unknown>;
+  const content = msgRecord.content;
+  let text = '';
   if (typeof content === 'string') {
     text = content;
   } else if (Array.isArray(content)) {
@@ -206,8 +213,26 @@ export function extractCompletionText(response: unknown): string {
       })
       .filter(Boolean)
       .join('\n');
-  } else {
-    text = '';
+  }
+
+  // If content is empty or null, check if the model provided output in `reasoning` or `reasoning_details`
+  if (!text.trim()) {
+    if (typeof msgRecord.reasoning === 'string' && msgRecord.reasoning.trim()) {
+      text = msgRecord.reasoning;
+    } else if (Array.isArray(msgRecord.reasoning_details)) {
+      text = msgRecord.reasoning_details
+        .map((p: any) => (p && typeof p.text === 'string' ? p.text : ''))
+        .filter(Boolean)
+        .join('\n');
+    }
+  }
+
+  // Strip <think>...</think> if the model included chain of thought in the content
+  if (text.includes('</think>')) {
+    const afterThink = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+    if (afterThink) {
+      text = afterThink;
+    }
   }
 
   if (!text.trim()) {
@@ -236,6 +261,10 @@ function logResponseMetadata(response: unknown, model: string, text: string): vo
     completionTokens: result.usage?.completion_tokens ?? null,
     contentCharacters: text.length,
   });
+
+  if (result.choices?.[0]?.finish_reason === 'length') {
+    console.warn(`[AI] Response was truncated due to max_tokens limit (finish_reason: length).`);
+  }
 }
 
 async function createCompletion(
@@ -245,40 +274,52 @@ async function createCompletion(
   maxTokens: number
 ): Promise<string> {
   const client = getClient();
-  console.log(`[AI] Requesting OpenRouter completion (model: ${model})`);
+  const modelsToTry = [
+    model,
+    ...FALLBACK_MODELS.filter((m) => m !== model),
+  ];
 
-  return retryTransientRequest(async () => {
-    const response: unknown = await client.chat.completions.create({
-      model,
-      messages,
-      temperature,
-      max_tokens: maxTokens,
-    });
+  let lastError: unknown;
 
+  for (const currentModel of modelsToTry) {
     try {
-      const text = extractCompletionText(response);
-      logResponseMetadata(response, model, text);
-      return text;
-    } catch (error) {
-      const metadata = response && typeof response === 'object'
-        ? response as {
-          id?: unknown;
-          model?: unknown;
-          choices?: Array<{ finish_reason?: unknown }>;
-          usage?: { completion_tokens?: unknown };
+      console.log(`[AI] Requesting OpenRouter completion (model: ${currentModel})`);
+      return await retryTransientRequest(async () => {
+        let response: unknown;
+        try {
+          response = await client.chat.completions.create({
+            model: currentModel,
+            messages,
+            temperature,
+            max_tokens: maxTokens,
+          });
+        } catch (callErr: any) {
+          throw callErr;
         }
-        : {};
-      console.warn('[AI] OpenRouter response contained no usable completion text', {
-        requestId: typeof metadata.id === 'string' ? metadata.id : null,
-        requestedModel: model,
-        returnedModel: typeof metadata.model === 'string' ? metadata.model : null,
-        choiceCount: Array.isArray(metadata.choices) ? metadata.choices.length : 0,
-        finishReason: metadata.choices?.[0]?.finish_reason ?? null,
-        completionTokens: metadata.usage?.completion_tokens ?? null,
+
+        try {
+          const text = extractCompletionText(response);
+          logResponseMetadata(response, currentModel, text);
+          return text;
+        } catch (extractError) {
+          logResponseMetadata(response, currentModel, '');
+          throw extractError;
+        }
       });
-      throw error;
+    } catch (err) {
+      lastError = err;
+      const status = getStatus(err);
+      console.warn(`[AI] Model ${currentModel} failed (status: ${status ?? 'unknown'}), checking fallbacks...`);
+      if (err instanceof AIServiceError && err.statusCode === 503 && err.message.includes('API_KEY')) {
+        throw err;
+      }
+      if (status === 401 || status === 403) {
+        throw toAIServiceError(err);
+      }
     }
-  });
+  }
+
+  throw toAIServiceError(lastError);
 }
 
 /**
@@ -306,7 +347,9 @@ export function generateCompletion(
 export function generateChatCompletion(
   messages: Array<{ role: string; content: string }>,
   systemPrompt: string,
-  _provider: AIProvider = 'gemini'
+  _provider: AIProvider = 'gemini',
+  maxTokens: number = 2000,
+  temperature: number = 0.7
 ): Promise<string> {
   return createCompletion(
     [
@@ -317,7 +360,7 @@ export function generateChatCompletion(
       })),
     ],
     getModel(),
-    0.8,
-    1000
+    temperature,
+    maxTokens
   );
 }

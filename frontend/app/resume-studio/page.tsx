@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -22,6 +22,7 @@ import {
   ChevronRight,
   ShieldCheck,
   RotateCcw,
+  Target,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
@@ -30,20 +31,10 @@ import { formatDate, formatRelativeTime, getScoreColor, getScoreLabel } from '@/
 import AppShell from '@/components/layout/AppShell';
 import { toast } from 'sonner';
 
-const POPULAR_ROLES = [
-  'Full Stack Developer',
-  'Frontend Developer',
-  'Backend Developer',
-  'Data Scientist',
-  'DevOps Engineer',
-  'Product Manager',
-  'Software Engineer',
-  'Mobile Developer',
-];
-
-export default function ResumeStudioPage() {
+function ResumeStudioContent() {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // State
   const [resumes, setResumes] = useState<Resume[]>([]);
@@ -59,6 +50,32 @@ export default function ResumeStudioPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Read URL search params & session storage for role selection
+  useEffect(() => {
+    const roleParam = searchParams.get('role');
+    const tabParam = searchParams.get('tab');
+    const stored = typeof window !== 'undefined' ? sessionStorage.getItem('resumeai_target_role') : null;
+    const effectiveRole = roleParam || stored || '';
+
+    if (tabParam === 'upload') {
+      if (!effectiveRole) {
+        // Prevent direct access to upload without a role
+        router.replace('/resume/role');
+        return;
+      }
+      setActiveTab('upload');
+    }
+
+    if (roleParam) {
+      setTargetRole(roleParam);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('resumeai_target_role', roleParam);
+      }
+    } else if (stored) {
+      setTargetRole(stored);
+    }
+  }, [searchParams, router]);
+
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push('/auth/login');
@@ -73,6 +90,12 @@ export default function ResumeStudioPage() {
       if (list.length > 0) {
         setSelectedResumeId(list[0]._id);
       } else {
+        // When user has no resumes, open role selection first to start
+        const stored = typeof window !== 'undefined' ? sessionStorage.getItem('resumeai_target_role') : null;
+        if (!stored) {
+          router.replace('/resume/role');
+          return;
+        }
         setActiveTab('upload');
       }
     } catch (err: any) {
@@ -80,7 +103,7 @@ export default function ResumeStudioPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -113,6 +136,12 @@ export default function ResumeStudioPage() {
     e.preventDefault();
     if (!file) {
       toast.error('Please select a resume file');
+      return;
+    }
+
+    if (!targetRole) {
+      toast.error('Please select a target job role first');
+      router.push('/resume/role');
       return;
     }
 
@@ -195,12 +224,13 @@ export default function ResumeStudioPage() {
             Review Analysis
           </button>
           <button
-            onClick={() => setActiveTab('upload')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              activeTab === 'upload'
-                ? 'bg-[#4F46D8] text-white shadow-xs'
-                : 'text-[#77798B] hover:text-[#171A35]'
-            }`}
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                sessionStorage.removeItem('resumeai_target_role');
+              }
+              router.push('/resume/role');
+            }}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-[#77798B] hover:text-[#171A35]"
           >
             <Upload className="h-3.5 w-3.5" />
             <span>Upload New</span>
@@ -272,34 +302,43 @@ export default function ResumeStudioPage() {
                 )}
               </div>
 
-              {/* Target Role input & popular tags */}
+              {/* Target Role Read-Only Summary */}
               <div>
                 <label className="block text-xs font-bold text-[#171A35] mb-2 uppercase tracking-wide">
-                  Target Job Role (Optional)
+                  Target Job Role
                 </label>
-                <input
-                  type="text"
-                  value={targetRole}
-                  onChange={(e) => setTargetRole(e.target.value)}
-                  placeholder="e.g. Full Stack Developer, Data Scientist..."
-                  className="w-full px-4 py-2.5 rounded-xl border border-[#E7E1D4] bg-[#FFFFFF] text-sm text-[#171A35] focus:outline-none focus:border-[#4F46D8]"
-                />
-                <div className="mt-2.5 flex flex-wrap gap-1.5">
-                  {POPULAR_ROLES.map((role) => (
-                    <button
-                      key={role}
-                      type="button"
-                      onClick={() => setTargetRole(role)}
-                      className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all ${
-                        targetRole === role
-                          ? 'bg-[#4F46D8] text-white border-[#4F46D8]'
-                          : 'bg-[#FAF8F1] text-[#77798B] border-[#E7E1D4] hover:text-[#171A35]'
-                      }`}
-                    >
-                      {role}
-                    </button>
-                  ))}
+                <div className="rounded-xl p-4 bg-[#F3F0FC] border border-[#E7E1D4] flex items-center justify-between">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-[#4F46D8] text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                      <Target className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#77798B] block">
+                        Selected Role
+                      </span>
+                      <p className="text-sm font-bold text-[#171A35] truncate">
+                        {targetRole ? (
+                          <span>{targetRole}</span>
+                        ) : (
+                          <span className="text-[#DC2626] font-medium">No role selected</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    href={`/resume/role${targetRole ? `?role=${encodeURIComponent(targetRole)}` : ''}`}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#4F46D8] hover:text-[#4338CA] bg-[#FFFFFF] px-3.5 py-2 rounded-lg border border-[#E7E1D4] hover:border-[#4F46D8]/50 shadow-xs transition-all flex-shrink-0"
+                  >
+                    <span>{targetRole ? 'Change Role' : 'Select Role'}</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
                 </div>
+                {!targetRole && (
+                  <p className="text-xs text-[#DC2626] mt-1.5 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    Please select a target job role to customize your AI analysis and scoring.
+                  </p>
+                )}
               </div>
 
               {/* AI Provider selector */}
@@ -336,7 +375,7 @@ export default function ResumeStudioPage() {
               {/* Submit CTA */}
               <button
                 type="submit"
-                disabled={!file || uploading}
+                disabled={!file || uploading || !targetRole}
                 className="w-full bg-[#4F46D8] hover:bg-[#4338CA] disabled:opacity-50 text-white py-3 rounded-xl text-sm font-bold transition-all shadow-xs flex items-center justify-center gap-2"
               >
                 {uploading ? (
@@ -640,5 +679,21 @@ export default function ResumeStudioPage() {
         </div>
       )}
     </AppShell>
+  );
+}
+
+export default function ResumeStudioPage() {
+  return (
+    <Suspense
+      fallback={
+        <AppShell>
+          <div className="flex h-96 items-center justify-center">
+            <div className="h-10 w-10 animate-spin rounded-full border-3 border-[#4F46D8]/20 border-t-[#4F46D8]" />
+          </div>
+        </AppShell>
+      }
+    >
+      <ResumeStudioContent />
+    </Suspense>
   );
 }

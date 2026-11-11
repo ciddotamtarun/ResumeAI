@@ -1,614 +1,640 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   FileEdit,
+  Save,
   FolderOpen,
   Printer,
-  Brain,
-  Save,
-  RotateCcw,
   Sparkles,
+  RotateCcw,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  FileText,
+  Search,
+  ExternalLink,
   ChevronRight,
-  Eye,
-  CheckCircle,
-  Layout,
-  Layers,
-  ArrowLeft,
+  Loader2,
 } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
 import AppShell from '@/components/layout/AppShell';
-import {
-  ResumeBuilderData,
-  SectionKey,
-  TemplateType,
-} from '@/types/builder';
-import {
-  DEFAULT_SECTION_ORDER,
-  DEFAULT_ENABLED_SECTIONS,
-  SAMPLE_RESUME_DATA,
-  EMPTY_RESUME_DATA,
-  calculateResumeScore,
-} from '@/lib/builder-defaults';
-import PersonalSection from '@/components/resume-builder/PersonalSection';
-import SummarySection from '@/components/resume-builder/SummarySection';
-import ExperienceSection from '@/components/resume-builder/ExperienceSection';
-import EducationSection from '@/components/resume-builder/EducationSection';
-import ProjectsSection from '@/components/resume-builder/ProjectsSection';
-import SkillsSection from '@/components/resume-builder/SkillsSection';
-import AdditionalSections from '@/components/resume-builder/AdditionalSections';
-import SectionManager from '@/components/resume-builder/SectionManager';
-import ResumePreview from '@/components/resume-builder/ResumePreview';
-import DraftManagerModal from '@/components/resume-builder/DraftManagerModal';
-import AIAssistModal from '@/components/resume-builder/AIAssistModal';
-import AnalyzeConfirmModal from '@/components/resume-builder/AnalyzeConfirmModal';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import api from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import {
+  ResumeData,
+  ResumeDraft,
+  TemplateType,
+  INITIAL_RESUME_DATA,
+  EMPTY_RESUME_DATA,
+} from '@/types/builder';
+import ResumeEditor from '@/components/resume-builder/ResumeEditor';
+import ResumePreview from '@/components/resume-builder/ResumePreview';
+import AiAssistModal from '@/components/resume-builder/AiAssistModal';
+import DraftsModal from '@/components/resume-builder/DraftsModal';
+import ExportModal from '@/components/resume-builder/ExportModal';
 
-type EditorTab = 'personal' | 'summary' | 'experience' | 'projects' | 'skills' | 'education' | 'additional' | 'reorder';
+const LOCAL_STORAGE_KEY = 'resume_builder_active_draft_v1';
 
 export default function ResumeBuilderPage() {
   const router = useRouter();
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated } = useAuth();
 
-  // Storage key based on user identity
-  const storagePrefix = user ? `elevateai_${user.id || user.email}` : 'elevateai_guest';
-  const DRAFTS_KEY = `${storagePrefix}_builder_drafts`;
-  const ACTIVE_DRAFT_KEY = `${storagePrefix}_builder_active_id`;
-
-  // State
-  const [drafts, setDrafts] = useState<ResumeBuilderData[]>([]);
-  const [currentData, setCurrentData] = useState<ResumeBuilderData>(SAMPLE_RESUME_DATA);
+  // Core Builder State
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
+  const [draftTitle, setDraftTitle] = useState('Senior Full Stack Resume');
+  const [template, setTemplate] = useState<TemplateType>('classic');
+  const [resumeData, setResumeData] = useState<ResumeData>(INITIAL_RESUME_DATA);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
-  const [activeTab, setActiveTab] = useState<EditorTab>('personal');
-  const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
 
-  // Modals state
-  const [draftManagerOpen, setDraftManagerOpen] = useState(false);
-  const [analyzeModalOpen, setAnalyzeModalOpen] = useState(false);
-  const [aiModal, setAiModal] = useState<{
-    isOpen: boolean;
-    action: 'improve-summary' | 'improve-bullet' | 'suggest-skills';
-    initialText: string;
-    context?: string;
-    onApply: (text: string) => void;
-    onApplySkills?: (tech: string[], soft: string[]) => void;
-  }>({
-    isOpen: false,
-    action: 'improve-summary',
-    initialText: '',
-    onApply: () => {},
-  });
+  // Mobile View Toggle
+  const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('editor');
 
-  // Load drafts on mount
+  // Modals
+  const [draftsModalOpen, setDraftsModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [savedDrafts, setSavedDrafts] = useState<ResumeDraft[]>([]);
+
+  // AI Assist Modal State
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiModalTitle, setAiModalTitle] = useState('');
+  const [aiModalType, setAiModalType] = useState<'improve-summary' | 'polish-bullet' | 'suggest-skills' | 'grammar-fix'>('improve-summary');
+  const [aiOriginalText, setAiOriginalText] = useState('');
+  const [aiSuggestedText, setAiSuggestedText] = useState<string | string[]>('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const aiContextRef = useRef<any>(null);
+
+  // Analyzing state
+  const [analyzing, setAnalyzing] = useState(false);
+
+  // 1. Initial Load: Restore from LocalStorage or API
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(DRAFTS_KEY);
-      const activeId = localStorage.getItem(ACTIVE_DRAFT_KEY);
-
-      if (stored) {
-        const parsed: ResumeBuilderData[] = JSON.parse(stored);
-        if (parsed && parsed.length > 0) {
-          setDrafts(parsed);
-          const found = parsed.find((d) => d.id === activeId) || parsed[0];
-          setCurrentData(found);
-          return;
-        }
-      }
-
-      // Default initial sample
-      const initial = { ...SAMPLE_RESUME_DATA, id: `draft-${Date.now()}` };
-      setDrafts([initial]);
-      setCurrentData(initial);
-      localStorage.setItem(DRAFTS_KEY, JSON.stringify([initial]));
-      localStorage.setItem(ACTIVE_DRAFT_KEY, initial.id);
-    } catch (e) {
-      console.warn('Failed to parse saved drafts from localStorage:', e);
-      setCurrentData(SAMPLE_RESUME_DATA);
-    }
-  }, [DRAFTS_KEY, ACTIVE_DRAFT_KEY]);
-
-  // Autosave handler (debounced)
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const saveCurrentData = useCallback((dataToSave: ResumeBuilderData) => {
-    setSaveStatus('saving');
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-
-    saveTimeoutRef.current = setTimeout(() => {
+    if (typeof window !== 'undefined') {
       try {
-        const updated = {
-          ...dataToSave,
-          updatedAt: new Date().toISOString(),
-        };
+        const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.data) setResumeData(parsed.data);
+          if (parsed.title) setDraftTitle(parsed.title);
+          if (parsed.template) setTemplate(parsed.template);
+          if (parsed.id) setCurrentDraftId(parsed.id);
+        }
+      } catch (err) {
+        console.error('Failed to parse local resume draft', err);
+      }
+    }
 
-        setDrafts((prev) => {
-          const exists = prev.some((d) => d.id === updated.id);
-          const next = exists
-            ? prev.map((d) => (d.id === updated.id ? updated : d))
-            : [updated, ...prev];
-          localStorage.setItem(DRAFTS_KEY, JSON.stringify(next));
-          return next;
+    if (isAuthenticated) {
+      loadSavedDrafts();
+    }
+  }, [isAuthenticated]);
+
+  // 2. Fetch User Drafts from Backend
+  const loadSavedDrafts = async () => {
+    try {
+      const res = await api.get('/builder/drafts');
+      if (res.data?.success && Array.isArray(res.data.drafts)) {
+        setSavedDrafts(res.data.drafts);
+      }
+    } catch {
+      // Backend may be offline; fallback to local drafts
+    }
+  };
+
+  // 3. Auto-save to LocalStorage on Change
+  const handleDataChange = (updated: ResumeData) => {
+    setResumeData(updated);
+    setSaveStatus('unsaved');
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(
+        LOCAL_STORAGE_KEY,
+        JSON.stringify({
+          id: currentDraftId,
+          title: draftTitle,
+          template,
+          data: updated,
+          updatedAt: new Date().toISOString(),
+        })
+      );
+    }
+  };
+
+  // 4. Save Draft to Backend
+  const handleSaveDraft = async () => {
+    setSaveStatus('saving');
+    try {
+      if (isAuthenticated) {
+        const res = await api.post('/builder/drafts', {
+          id: currentDraftId,
+          title: draftTitle,
+          targetRole: resumeData.personalInfo.jobTitle,
+          template,
+          data: resumeData,
         });
 
-        localStorage.setItem(ACTIVE_DRAFT_KEY, updated.id);
-        setSaveStatus('saved');
-      } catch (err) {
-        console.error('Autosave error:', err);
-        setSaveStatus('unsaved');
-      }
-    }, 600);
-  }, [DRAFTS_KEY, ACTIVE_DRAFT_KEY]);
-
-  // Update data wrapper
-  const handleUpdate = (updater: (prev: ResumeBuilderData) => ResumeBuilderData) => {
-    setCurrentData((prev) => {
-      const next = updater(prev);
-      saveCurrentData(next);
-      return next;
-    });
-  };
-
-  // Draft operations
-  const handleSelectDraft = (draftId: string) => {
-    const draft = drafts.find((d) => d.id === draftId);
-    if (draft) {
-      setCurrentData(draft);
-      localStorage.setItem(ACTIVE_DRAFT_KEY, draft.id);
-      toast.success(`Opened "${draft.title}"`);
-    }
-  };
-
-  const handleCreateNewDraft = (useSample = false) => {
-    const newDraft: ResumeBuilderData = useSample
-      ? {
-          ...SAMPLE_RESUME_DATA,
-          id: `draft-${Date.now()}`,
-          title: `Resume ${drafts.length + 1}`,
-          updatedAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
+        if (res.data?.success && res.data.draft) {
+          setCurrentDraftId(res.data.draft._id);
+          toast.success('Resume draft saved to your account!');
+          loadSavedDrafts();
         }
-      : {
-          ...EMPTY_RESUME_DATA,
-          id: `draft-${Date.now()}`,
-          title: `Untitled Resume ${drafts.length + 1}`,
-          updatedAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-        };
-
-    const nextDrafts = [newDraft, ...drafts];
-    setDrafts(nextDrafts);
-    setCurrentData(newDraft);
-    localStorage.setItem(DRAFTS_KEY, JSON.stringify(nextDrafts));
-    localStorage.setItem(ACTIVE_DRAFT_KEY, newDraft.id);
-    toast.success('Created new resume draft');
-  };
-
-  const handleRenameDraft = (draftId: string, newTitle: string) => {
-    const next = drafts.map((d) => (d.id === draftId ? { ...d, title: newTitle } : d));
-    setDrafts(next);
-    localStorage.setItem(DRAFTS_KEY, JSON.stringify(next));
-    if (currentData.id === draftId) {
-      setCurrentData((prev) => ({ ...prev, title: newTitle }));
+      } else {
+        toast.success('Resume draft saved locally!');
+      }
+      setSaveStatus('saved');
+    } catch (err: any) {
+      console.error('Save failed', err);
+      toast.error(err.response?.data?.message || 'Failed to sync with cloud. Draft saved locally.');
+      setSaveStatus('saved');
     }
   };
 
-  const handleDuplicateDraft = (draftId: string) => {
-    const source = drafts.find((d) => d.id === draftId);
-    if (!source) return;
-
-    const copy: ResumeBuilderData = {
-      ...source,
-      id: `draft-${Date.now()}`,
-      title: `${source.title} (Copy)`,
-      updatedAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-    };
-
-    const next = [copy, ...drafts];
-    setDrafts(next);
-    setCurrentData(copy);
-    localStorage.setItem(DRAFTS_KEY, JSON.stringify(next));
-    localStorage.setItem(ACTIVE_DRAFT_KEY, copy.id);
-    toast.success(`Duplicated "${source.title}"`);
-  };
-
-  const handleDeleteDraft = (draftId: string) => {
-    const remaining = drafts.filter((d) => d.id !== draftId);
-    setDrafts(remaining);
-    localStorage.setItem(DRAFTS_KEY, JSON.stringify(remaining));
-
-    if (currentData.id === draftId) {
-      const nextActive = remaining[0] || SAMPLE_RESUME_DATA;
-      setCurrentData(nextActive);
-      localStorage.setItem(ACTIVE_DRAFT_KEY, nextActive.id);
+  // 5. Select & Load a Draft
+  const handleSelectDraft = async (draftId: string) => {
+    try {
+      const res = await api.get(`/builder/drafts/${draftId}`);
+      if (res.data?.success && res.data.draft) {
+        const draft = res.data.draft;
+        setCurrentDraftId(draft._id);
+        setDraftTitle(draft.title);
+        setTemplate(draft.template || 'classic');
+        if (draft.data) setResumeData(draft.data);
+        setSaveStatus('saved');
+        toast.success(`Loaded draft "${draft.title}"`);
+      }
+    } catch {
+      toast.error('Could not load resume draft.');
     }
-    toast.success('Resume draft deleted');
   };
 
-  // PDF Print Functionality
-  const handlePrintPDF = () => {
+  // 6. Create New Resume
+  const handleCreateNew = () => {
+    setCurrentDraftId(null);
+    setDraftTitle('New Untitled Resume');
+    setResumeData(EMPTY_RESUME_DATA);
+    setSaveStatus('saved');
+    toast.info('Started fresh resume draft.');
+  };
+
+  // 7. Rename Draft
+  const handleRenameDraft = async (draftId: string, newTitle: string) => {
+    try {
+      const res = await api.patch(`/builder/drafts/${draftId}/rename`, { title: newTitle });
+      if (res.data?.success) {
+        toast.success('Draft renamed.');
+        if (draftId === currentDraftId) setDraftTitle(newTitle);
+        loadSavedDrafts();
+      }
+    } catch {
+      toast.error('Failed to rename draft.');
+    }
+  };
+
+  // 8. Delete Draft
+  const handleDeleteDraft = async (draftId: string) => {
+    try {
+      const res = await api.delete(`/builder/drafts/${draftId}`);
+      if (res.data?.success) {
+        toast.success('Draft deleted.');
+        if (draftId === currentDraftId) {
+          handleCreateNew();
+        }
+        loadSavedDrafts();
+      }
+    } catch {
+      toast.error('Failed to delete draft.');
+    }
+  };
+
+  // 9. AI Assistance Trigger
+  const handleTriggerAiAssist = async (
+    type: 'improve-summary' | 'polish-bullet' | 'suggest-skills' | 'grammar-fix',
+    text: string,
+    context?: any
+  ) => {
+    setAiModalType(type);
+    setAiOriginalText(text);
+    aiContextRef.current = context;
+
+    let modalTitle = 'AI Professional Summary Refinement';
+    if (type === 'polish-bullet') modalTitle = 'Polish Achievement with XYZ Formula';
+    if (type === 'suggest-skills') modalTitle = 'Suggest In-Demand Skills';
+    if (type === 'grammar-fix') modalTitle = 'Grammar & Clarity Enhancement';
+
+    setAiModalTitle(modalTitle);
+    setAiModalOpen(true);
+    setAiLoading(true);
+
+    try {
+      const res = await api.post('/builder/ai-assist', {
+        type,
+        text,
+        role: resumeData.personalInfo.jobTitle,
+        context: typeof context === 'string' ? context : JSON.stringify(context || {}),
+      });
+
+      if (res.data?.success && res.data.result) {
+        setAiSuggestedText(res.data.result);
+      } else {
+        setAiSuggestedText(text);
+      }
+    } catch (err: any) {
+      toast.error('AI refinement unavailable. Providing heuristic suggestions.');
+      if (type === 'improve-summary') {
+        setAiSuggestedText(
+          `Results-driven ${resumeData.personalInfo.jobTitle || 'Professional'} with demonstrable expertise in designing scalable architectures and accelerating product delivery.`
+        );
+      } else if (type === 'polish-bullet') {
+        setAiSuggestedText(
+          'Engineered and optimized core features, improving system performance and reducing processing overhead.'
+        );
+      } else if (type === 'suggest-skills') {
+        setAiSuggestedText(['System Design', 'CI/CD Pipelines', 'REST APIs', 'Cloud Architecture', 'Agile / Scrum']);
+      }
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // 10. Apply AI Suggestion
+  const handleApplyAiSuggestion = (applied: string | string[]) => {
+    if (aiModalType === 'improve-summary' && typeof applied === 'string') {
+      handleDataChange({ ...resumeData, summary: applied });
+      toast.success('Summary updated with AI recommendation!');
+    } else if (aiModalType === 'suggest-skills' && Array.isArray(applied)) {
+      const existingNames = new Set(resumeData.skills.technical.map((s) => s.name.toLowerCase()));
+      const newItems = applied
+        .filter((name) => !existingNames.has(name.toLowerCase()))
+        .map((name) => ({ id: `sk_${Date.now()}_${Math.random()}`, name, level: 'Advanced' as const }));
+
+      handleDataChange({
+        ...resumeData,
+        skills: {
+          ...resumeData.skills,
+          technical: [...resumeData.skills.technical, ...newItems],
+        },
+      });
+      toast.success(`Added ${newItems.length} skills to your resume!`);
+    } else if (aiModalType === 'polish-bullet' && typeof applied === 'string') {
+      toast.info('Copy the polished bullet point into your experience entry.');
+    }
+  };
+
+  // 11. PDF Print Trigger
+  const handleTriggerPrint = () => {
     const originalTitle = document.title;
-    const sanitizedName = (currentData.contact.fullName || 'Candidate').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
-    document.title = `${sanitizedName}_Resume`;
+    const safeName = (resumeData.personalInfo.fullName || 'Resume').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+    document.title = `${safeName}_Resume`;
 
-    toast.info('Opening print dialog. Select "Save as PDF" for vector document export.');
     window.print();
 
+    // Restore title after print dialog closes
     setTimeout(() => {
       document.title = originalTitle;
     }, 1000);
   };
 
-  // AI Modal Triggers
-  const openSummaryAI = (text: string) => {
-    setAiModal({
-      isOpen: true,
-      action: 'improve-summary',
-      initialText: text,
-      context: currentData.contact.jobTitle,
-      onApply: (improved) => {
-        handleUpdate((prev) => ({ ...prev, summary: improved }));
-      },
-    });
-  };
+  // 12. Run Full AI Analysis on this Resume
+  const handleAnalyzeResume = async () => {
+    setAnalyzing(true);
+    try {
+      const res = await api.post('/builder/analyze', {
+        draftId: currentDraftId,
+        resumeData,
+        targetRole: resumeData.personalInfo.jobTitle,
+      });
 
-  const openBulletAI = (bullet: string, roleContext: string, onApply: (newBullet: string) => void) => {
-    setAiModal({
-      isOpen: true,
-      action: 'improve-bullet',
-      initialText: bullet,
-      context: roleContext,
-      onApply: (improved) => {
-        onApply(improved);
-      },
-    });
+      if (res.data?.success && res.data.resumeId) {
+        toast.success('Resume analyzed successfully!');
+        router.push(`/resume/${res.data.resumeId}`);
+      } else {
+        toast.error('Analysis failed. Please ensure your resume has sufficient content.');
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to complete resume analysis.');
+    } finally {
+      setAnalyzing(false);
+    }
   };
-
-  const openSkillsAI = () => {
-    setAiModal({
-      isOpen: true,
-      action: 'suggest-skills',
-      initialText: currentData.skills.technical.join(', '),
-      context: currentData.contact.jobTitle,
-      onApply: () => {},
-      onApplySkills: (tech, soft) => {
-        handleUpdate((prev) => ({
-          ...prev,
-          skills: {
-            technical: Array.from(new Set([...prev.skills.technical, ...tech])),
-            soft: Array.from(new Set([...prev.skills.soft, ...soft])),
-          },
-        }));
-      },
-    });
-  };
-
-  const completionScore = calculateResumeScore(currentData);
 
   return (
     <AppShell>
-      {/* ─── Dedicated Print Stylesheet for Real Vector PDF Export ────────── */}
+            {/* ─── Global Print Styles ────────────────────────────────────────── */}
       <style jsx global>{`
         @media print {
-          /* Hide surrounding layout, sidebar, headers, and UI controls */
-          header,
-          nav,
+          @page {
+            size: A4 portrait;
+            margin: 8mm 10mm;
+          }
+
+          *, *::before, *::after {
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          html, body {
+            width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            overflow: visible !important;
+          }
+
+          /* Explicitly HIDE all non-resume application UI chrome */
           aside,
+          nav,
+          header.lg\\:hidden,
+          footer,
           button,
+          input,
+          textarea,
+          select,
+          [role="dialog"],
+          [data-sonner-toaster],
           .no-print,
-          div[role='dialog'],
-          #__next > div > div > aside,
-          div:has(> aside) {
+          .resume-editor-pane,
+          .resume-control-bar,
+          .resume-mobile-switcher,
+          .preview-toolbar {
             display: none !important;
           }
 
-          body,
-          html {
-            background: #ffffff !important;
-            margin: 0 !important;
-            padding: 0 !important;
+          /* Reset all ancestor layout containers */
+          div[class*="min-h-screen"],
+          div[class*="flex-1"],
+          main,
+          div[class*="max-w-7xl"],
+          .resume-builder-container,
+          .resume-builder-grid,
+          .resume-preview-column,
+          .resume-preview-wrapper,
+          .resume-canvas-container,
+          .resume-scale-wrapper {
+            display: block !important;
+            position: static !important;
+            float: none !important;
             width: 100% !important;
-          }
-
-          /* Isolate printable A4 container */
-          #resume-printable-area {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            max-width: 100% !important;
+            max-width: none !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
             margin: 0 !important;
             padding: 0 !important;
             border: none !important;
             box-shadow: none !important;
+            background: #ffffff !important;
+            overflow: visible !important;
+            transform: none !important;
+            top: auto !important;
+            left: auto !important;
+          }
+
+          /* Format printable resume document for A4 */
+          #resume-print-document {
+            display: block !important;
+            position: static !important;
+            width: 100% !important;
+            max-width: 210mm !important;
+            height: auto !important;
+            min-height: 0 !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: #ffffff !important;
+            overflow: visible !important;
             transform: none !important;
           }
 
-          @page {
-            size: A4 portrait;
-            margin: 10mm;
+          /* Prevent unwanted section splitting across page boundaries */
+          .break-inside-avoid,
+          section,
+          .resume-section-item,
+          header {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+          }
+
+          h1, h2, h3 {
+            break-after: avoid !important;
+            page-break-after: avoid !important;
           }
         }
       `}</style>
 
-      <div className="space-y-5 pb-12">
-        {/* ─── Top Page Header ─────────────────────────────────────────────── */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-[#E7E1D4]">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-[#F3F0FC] text-[#4F46D8]">
-                <FileEdit className="w-5 h-5" />
-              </span>
-              <h1 className="text-2xl sm:text-3xl font-black font-['Outfit'] text-[#171A35]">
-                Resume Builder
-              </h1>
-            </div>
-            <p className="text-xs text-[#77798B] mt-1 flex items-center gap-2">
-              <span>Craft professional, ATS-optimized resumes with live instant preview</span>
-              <span>•</span>
-              <span className="text-[#168575] font-medium flex items-center gap-1">
-                <CheckCircle className="w-3.5 h-3.5" />
-                {saveStatus === 'saving' ? 'Saving changes...' : 'Draft autosaved'}
-              </span>
-            </p>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Drafts Manager */}
-            <button
-              type="button"
-              onClick={() => setDraftManagerOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[#E7E1D4] text-xs font-semibold text-[#171A35] hover:bg-[#FAF8F1] transition-colors shadow-xs"
-            >
-              <FolderOpen className="w-4 h-4 text-[#4F46D8]" />
-              <span>Drafts ({drafts.length})</span>
-            </button>
-
-            {/* Analyze with Resume Studio */}
-            <button
-              type="button"
-              onClick={() => setAnalyzeModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#F3F0FC] hover:bg-[#4F46D8] text-[#4F46D8] hover:text-white border border-[#4F46D8]/20 text-xs font-semibold transition-all shadow-xs"
-            >
-              <Brain className="w-4 h-4" />
-              <span>Analyze Resume</span>
-            </button>
-
-            {/* Print / Download PDF */}
-            <button
-              type="button"
-              onClick={handlePrintPDF}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#4F46D8] hover:bg-[#4338CA] text-white text-xs font-semibold shadow-xs transition-colors"
-            >
-              <Printer className="w-4 h-4" />
-              <span>Download PDF</span>
-            </button>
-          </div>
-        </div>
-
-        {/* ─── Score & Status Banner ────────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-white border border-[#E7E1D4] shadow-xs">
+      <div className="resume-builder-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+        {/* Top Control Bar */}
+        <div className="resume-control-bar no-print bg-white rounded-2xl border border-[#E7E1D4] p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+          {/* Left: Draft Title & Status */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#F3F0FC] flex items-center justify-center font-bold text-xs text-[#4F46D8]">
-              {completionScore}%
+            <div className="w-10 h-10 rounded-xl bg-[#F3F0FC] flex items-center justify-center text-[#4F46D8] shrink-0">
+              <FileEdit className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs font-bold text-[#171A35]">
-                Resume Completeness: {completionScore >= 80 ? 'Excellent' : completionScore >= 50 ? 'In Progress' : 'Needs Details'}
-              </div>
-              <div className="w-36 sm:w-48 bg-[#FAF8F1] h-1.5 rounded-full overflow-hidden mt-1 border border-[#E7E1D4]">
-                <div
-                  className="h-full bg-[#4F46D8] rounded-full transition-all duration-500"
-                  style={{ width: `${completionScore}%` }}
+              <div className="flex items-center gap-2">
+                <Input
+                  value={draftTitle}
+                  onChange={(e) => {
+                    setDraftTitle(e.target.value);
+                    setSaveStatus('unsaved');
+                  }}
+                  className="h-8 font-bold text-sm text-[#171A35] max-w-[260px] border-transparent hover:border-[#E7E1D4] focus:border-[#4F46D8] px-1.5 transition-colors"
                 />
+                {saveStatus === 'saved' && (
+                  <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Saved
+                  </span>
+                )}
+                {saveStatus === 'saving' && (
+                  <span className="flex items-center gap-1 text-[11px] font-medium text-[#4F46D8] bg-[#F3F0FC] px-2 py-0.5 rounded-full">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Saving...
+                  </span>
+                )}
+                {saveStatus === 'unsaved' && (
+                  <span className="flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                    <Clock className="w-3 h-3" />
+                    Unsaved
+                  </span>
+                )}
               </div>
+              <p className="text-[11px] text-[#77798B] px-1.5">
+                Target: <span className="font-semibold text-[#171A35]">{resumeData.personalInfo.jobTitle || 'General'}</span>
+              </p>
             </div>
           </div>
 
-          {/* Mobile View Toggle */}
-          <div className="flex lg:hidden items-center bg-[#FAF8F1] p-1 rounded-xl border border-[#E7E1D4]">
-            <button
+          {/* Right: Actions */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
               type="button"
-              onClick={() => setMobileView('editor')}
-              className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${
-                mobileView === 'editor' ? 'bg-[#4F46D8] text-white' : 'text-[#77798B]'
-              }`}
+              variant="outline"
+              size="sm"
+              onClick={() => setDraftsModalOpen(true)}
+              className="h-8 text-xs font-medium text-[#171A35] flex items-center gap-1.5"
             >
-              Edit Form
-            </button>
-            <button
-              type="button"
-              onClick={() => setMobileView('preview')}
-              className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${
-                mobileView === 'preview' ? 'bg-[#4F46D8] text-white' : 'text-[#77798B]'
-              }`}
-            >
-              Live Preview
-            </button>
-          </div>
+              <FolderOpen className="w-3.5 h-3.5 text-[#4F46D8]" />
+              <span>My Resumes</span>
+            </Button>
 
-          <div className="text-[11px] text-[#77798B] hidden sm:block">
-            Editing Draft: <strong className="text-[#171A35]">{currentData.title}</strong>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleSaveDraft}
+              disabled={saveStatus === 'saving'}
+              className="h-8 text-xs font-medium text-[#171A35] flex items-center gap-1.5"
+            >
+              <Save className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Save Draft</span>
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAnalyzeResume}
+              disabled={analyzing}
+              className="h-8 text-xs font-semibold text-[#4F46D8] border-[#4F46D8]/30 hover:bg-[#F3F0FC] flex items-center gap-1.5"
+            >
+              {analyzing ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Search className="w-3.5 h-3.5" />
+              )}
+              <span>{analyzing ? 'Analyzing...' : 'Analyze with AI'}</span>
+            </Button>
+
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setExportModalOpen(true)}
+              className="h-8 text-xs font-semibold bg-[#4F46D8] hover:bg-[#4338CA] text-white flex items-center gap-1.5 shadow-sm"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Export PDF</span>
+            </Button>
           </div>
         </div>
 
-        {/* ─── Main Two-Column Layout ───────────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column: Form Editor (lg:col-span-6 or 7) */}
-          <div
-            className={`space-y-4 lg:col-span-6 xl:col-span-6 ${
-              mobileView === 'preview' ? 'hidden lg:block' : 'block'
+        {/* Mobile View Switcher */}
+        <div className="resume-mobile-switcher no-print flex lg:hidden bg-white p-1 rounded-xl border border-[#E7E1D4]">
+          <button
+            type="button"
+            onClick={() => setMobileTab('editor')}
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+              mobileTab === 'editor'
+                ? 'bg-[#4F46D8] text-white shadow-xs'
+                : 'text-[#77798B] hover:text-[#171A35]'
             }`}
           >
-            {/* Editor Navigation Tabs */}
-            <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none bg-white p-1.5 rounded-2xl border border-[#E7E1D4]">
-              {[
-                { id: 'personal', label: 'Contact' },
-                { id: 'summary', label: 'Summary' },
-                { id: 'experience', label: 'Experience' },
-                { id: 'projects', label: 'Projects' },
-                { id: 'skills', label: 'Skills' },
-                { id: 'education', label: 'Education' },
-                { id: 'additional', label: 'More' },
-                { id: 'reorder', label: 'Reorder' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
+            ✏️ Edit Content
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab('preview')}
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+              mobileTab === 'preview'
+                ? 'bg-[#4F46D8] text-white shadow-xs'
+                : 'text-[#77798B] hover:text-[#171A35]'
+            }`}
+          >
+            📄 Live Preview
+          </button>
+        </div>
+
+        {/* Main Work Area: 2 Columns on Desktop */}
+        <div className="resume-builder-grid grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left Column: Form Editor */}
+          <div className={`resume-editor-pane no-print lg:col-span-6 space-y-4 ${mobileTab === 'preview' ? 'hidden lg:block' : 'block'}`}>
+            <div className="flex items-center justify-between pb-1">
+              <h2 className="text-sm font-bold text-[#171A35] uppercase tracking-wider">
+                Resume Content Sections
+              </h2>
+              <div className="flex items-center gap-2">
+                <Button
                   type="button"
-                  onClick={() => setActiveTab(tab.id as EditorTab)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
-                    activeTab === tab.id
-                      ? 'bg-[#F3F0FC] text-[#4F46D8] shadow-xs'
-                      : 'text-[#77798B] hover:text-[#171A35] hover:bg-[#FAF8F1]'
-                  }`}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDataChange(INITIAL_RESUME_DATA)}
+                  className="h-7 text-[11px] text-[#4F46D8] hover:bg-[#F3F0FC]"
                 >
-                  {tab.label}
-                </button>
-              ))}
+                  Load Sample Data
+                </Button>
+                <span className="text-gray-300">|</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDataChange(EMPTY_RESUME_DATA)}
+                  className="h-7 text-[11px] text-gray-500 hover:text-rose-600"
+                >
+                  Clear All
+                </Button>
+              </div>
             </div>
 
-            {/* Form Section Panels */}
-            {activeTab === 'personal' && (
-              <PersonalSection
-                contact={currentData.contact}
-                onChange={(contact) => handleUpdate((prev) => ({ ...prev, contact }))}
-              />
-            )}
-
-            {activeTab === 'summary' && (
-              <SummarySection
-                summary={currentData.summary}
-                onChange={(summary) => handleUpdate((prev) => ({ ...prev, summary }))}
-                onAIAssist={openSummaryAI}
-              />
-            )}
-
-            {activeTab === 'experience' && (
-              <ExperienceSection
-                experience={currentData.experience}
-                onChange={(experience) => handleUpdate((prev) => ({ ...prev, experience }))}
-                onAIBulletAssist={openBulletAI}
-              />
-            )}
-
-            {activeTab === 'projects' && (
-              <ProjectsSection
-                projects={currentData.projects}
-                onChange={(projects) => handleUpdate((prev) => ({ ...prev, projects }))}
-                onAIBulletAssist={openBulletAI}
-              />
-            )}
-
-            {activeTab === 'skills' && (
-              <SkillsSection
-                skills={currentData.skills}
-                onChange={(skills) => handleUpdate((prev) => ({ ...prev, skills }))}
-                onAISkillSuggest={openSkillsAI}
-              />
-            )}
-
-            {activeTab === 'education' && (
-              <EducationSection
-                education={currentData.education}
-                onChange={(education) => handleUpdate((prev) => ({ ...prev, education }))}
-              />
-            )}
-
-            {activeTab === 'additional' && (
-              <AdditionalSections
-                certifications={currentData.certifications}
-                awards={currentData.awards}
-                volunteer={currentData.volunteer}
-                languages={currentData.languages}
-                enabledSections={currentData.enabledSections}
-                onToggleSection={(key) =>
-                  handleUpdate((prev) => ({
-                    ...prev,
-                    enabledSections: {
-                      ...prev.enabledSections,
-                      [key]: !prev.enabledSections[key],
-                    },
-                  }))
-                }
-                onUpdateCertifications={(certifications) =>
-                  handleUpdate((prev) => ({ ...prev, certifications }))
-                }
-                onUpdateAwards={(awards) => handleUpdate((prev) => ({ ...prev, awards }))}
-                onUpdateVolunteer={(volunteer) =>
-                  handleUpdate((prev) => ({ ...prev, volunteer }))
-                }
-                onUpdateLanguages={(languages) =>
-                  handleUpdate((prev) => ({ ...prev, languages }))
-                }
-              />
-            )}
-
-            {activeTab === 'reorder' && (
-              <SectionManager
-                sectionOrder={currentData.sectionOrder}
-                enabledSections={currentData.enabledSections}
-                onReorder={(sectionOrder) => handleUpdate((prev) => ({ ...prev, sectionOrder }))}
-                onToggle={(key) =>
-                  handleUpdate((prev) => ({
-                    ...prev,
-                    enabledSections: {
-                      ...prev.enabledSections,
-                      [key]: !prev.enabledSections[key],
-                    },
-                  }))
-                }
-              />
-            )}
+            <ResumeEditor
+              data={resumeData}
+              onChange={handleDataChange}
+              onAiAssist={handleTriggerAiAssist}
+            />
           </div>
 
-          {/* Right Column: Live Sticky Resume Preview (lg:col-span-6 or 7) */}
-          <div
-            className={`lg:col-span-6 xl:col-span-6 sticky top-20 ${
-              mobileView === 'editor' ? 'hidden lg:block' : 'block'
-            }`}
-          >
-            <div className="h-[85vh]">
-              <ResumePreview
-                data={currentData}
-                onTemplateChange={(template: TemplateType) =>
-                  handleUpdate((prev) => ({ ...prev, template }))
-                }
-                onPrintPDF={handlePrintPDF}
-              />
-            </div>
+          {/* Right Column: Live Document Preview */}
+          <div className={`resume-preview-column lg:col-span-6 sticky top-24 ${mobileTab === 'editor' ? 'hidden lg:block' : 'block'}`}>
+            <ResumePreview
+              data={resumeData}
+              template={template}
+              onChangeTemplate={(t) => {
+                setTemplate(t);
+                setSaveStatus('unsaved');
+              }}
+              onOpenExport={() => setExportModalOpen(true)}
+            />
           </div>
         </div>
       </div>
 
-      {/* ─── Modals ────────────────────────────────────────────────────────── */}
-      <DraftManagerModal
-        isOpen={draftManagerOpen}
-        onClose={() => setDraftManagerOpen(false)}
-        currentDraftId={currentData.id}
-        drafts={drafts}
+      {/* Modals */}
+      <AiAssistModal
+        isOpen={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        title={aiModalTitle}
+        type={aiModalType}
+        originalText={aiOriginalText}
+        suggestedText={aiSuggestedText}
+        isLoading={aiLoading}
+        onApply={handleApplyAiSuggestion}
+        onRetry={() =>
+          handleTriggerAiAssist(aiModalType, aiOriginalText, aiContextRef.current)
+        }
+      />
+
+      <DraftsModal
+        isOpen={draftsModalOpen}
+        onClose={() => setDraftsModalOpen(false)}
+        drafts={savedDrafts}
+        currentDraftId={currentDraftId}
         onSelectDraft={handleSelectDraft}
-        onCreateNewDraft={handleCreateNewDraft}
+        onCreateNew={handleCreateNew}
         onRenameDraft={handleRenameDraft}
-        onDuplicateDraft={handleDuplicateDraft}
         onDeleteDraft={handleDeleteDraft}
       />
 
-      <AIAssistModal
-        isOpen={aiModal.isOpen}
-        onClose={() => setAiModal((prev) => ({ ...prev, isOpen: false }))}
-        action={aiModal.action}
-        initialText={aiModal.initialText}
-        context={aiModal.context}
-        onApply={aiModal.onApply}
-        onApplySkills={aiModal.onApplySkills}
-      />
-
-      <AnalyzeConfirmModal
-        isOpen={analyzeModalOpen}
-        onClose={() => setAnalyzeModalOpen(false)}
-        data={currentData}
+      <ExportModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        resumeData={resumeData}
+        onTriggerPrint={handleTriggerPrint}
       />
     </AppShell>
   );

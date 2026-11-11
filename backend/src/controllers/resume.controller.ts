@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 import Resume from '../models/Resume.model';
-import { parseResume } from '../services/parser.service';
+import { parseResume, ParserError } from '../services/parser.service';
 import { analyzeResume, generateImprovements } from '../services/resume.service';
 import { AIServiceError, generateCompletion } from '../services/ai.service';
 
@@ -15,9 +15,10 @@ export const uploadResume = async (req: AuthRequest, res: Response): Promise<voi
     const provider = ((req.body.provider as string) || 'gemini') as 'openai' | 'gemini';
     const targetRole = (req.body.targetRole as string) || '';
 
+    // 1. Extract text from uploaded document (PDF, DOCX, DOC, TXT, RTF, ODT, MD, HTML, Image)
     const rawText = await parseResume(req.file.path, req.file.mimetype);
 
-    console.log(`[Upload] Raw text length: ${rawText?.trim().length || 0}`);
+    console.log(`[Upload] Raw text length: ${rawText?.trim().length || 0} characters`);
     console.log(`[Upload] Target role: ${targetRole || '(none)'}`);
 
     if (!rawText || rawText.trim().length < 20) {
@@ -29,11 +30,13 @@ export const uploadResume = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
+    // 2. Perform AI analysis and generate improvement recommendations concurrently
     const [analysis, improvements] = await Promise.all([
       analyzeResume(rawText, targetRole, provider),
       generateImprovements(rawText, targetRole, provider),
     ]);
 
+    // 3. Persist analysis report to MongoDB
     const resume = await Resume.create({
       userId: req.user!._id,
       fileName: req.file.originalname,
@@ -45,14 +48,32 @@ export const uploadResume = async (req: AuthRequest, res: Response): Promise<voi
       aiProvider: provider,
     });
 
+    if (!resume || !resume._id) {
+      throw new Error('Failed to save resume analysis to the database.');
+    }
+
+    console.log(`[Upload] Resume successfully analyzed and saved with ID: ${resume._id}`);
     res.status(201).json({ success: true, resume });
   } catch (error: any) {
-    const statusCode = error instanceof AIServiceError ? error.statusCode : 500;
-    const message = error instanceof AIServiceError
-      ? error.message
-      : 'Failed to process resume. Please try again.';
+    let statusCode = 500;
+    let message = 'Failed to process resume. Please try again.';
+
+    if (error instanceof ParserError) {
+      statusCode = error.statusCode;
+      message = error.message;
+    } else if (error instanceof AIServiceError) {
+      statusCode = error.statusCode;
+      message = error.message;
+    } else if (error?.name === 'ValidationError') {
+      statusCode = 400;
+      message = `Database validation failed: ${error.message}`;
+    } else if (error?.message) {
+      message = error.message;
+    }
+
     console.error('[Upload] Resume processing failed', {
       errorType: error instanceof Error ? error.name : typeof error,
+      message,
       statusCode,
     });
     res.status(statusCode).json({ success: false, message });

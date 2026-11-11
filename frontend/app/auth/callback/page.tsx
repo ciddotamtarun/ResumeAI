@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, Suspense } from 'react';
+import { useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
@@ -9,20 +9,45 @@ function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
+  const hasProcessedRef = useRef(false);
 
   useEffect(() => {
+    if (hasProcessedRef.current) return;
+
     const token = searchParams.get('token');
-    if (token) {
-      localStorage.setItem('token', token);
-      api.get('/auth/me').then(({ data }) => {
-        if (data.success) {
-          login(token, data.user);
-          router.push('/dashboard');
-        }
-      }).catch(() => router.push('/auth/login?error=callback'));
-    } else {
-      router.push('/auth/login?error=no_token');
+    const error = searchParams.get('error');
+
+    if (error) {
+      hasProcessedRef.current = true;
+      router.replace(`/auth/login?error=${encodeURIComponent(error)}`);
+      return;
     }
+
+    if (!token) {
+      hasProcessedRef.current = true;
+      router.replace('/auth/login?error=no_token');
+      return;
+    }
+
+    hasProcessedRef.current = true;
+    localStorage.setItem('token', token);
+
+    api
+      .get('/auth/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(({ data }) => {
+        if (data?.success && data?.user) {
+          login(token, data.user);
+          router.replace('/dashboard');
+        } else {
+          router.replace('/auth/login?error=callback');
+        }
+      })
+      .catch((err) => {
+        console.error('[AuthCallback] Failed to retrieve user session:', err);
+        router.replace('/auth/login?error=callback');
+      });
   }, [searchParams, login, router]);
 
   return (

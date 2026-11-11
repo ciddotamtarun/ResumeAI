@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgFem" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46D8" />
+      <stop offset="100%" stop-color="#7C3AED" />
+    </linearGradient>
+    <linearGradient id="skinFem" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDDFD0" />
+      <stop offset="100%" stop-color="#F3CBB5" />
+    </linearGradient>
+    <linearGradient id="hairFem" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2D150B" />
+      <stop offset="100%" stop-color="#1A0B05" />
+    </linearGradient>
+    <linearGradient id="suitFem" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E1B4B" />
+      <stop offset="100%" stop-color="#312E81" />
+    </linearGradient>
+    <filter id="shadowFem" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Background Circle -->
+  <circle cx="120" cy="120" r="116" fill="url(#bgFem)" stroke="#FFFFFF" stroke-width="4" />
+
+  <!-- Background Glow & Accent -->
+  <circle cx="120" cy="90" r="70" fill="#FFFFFF" opacity="0.08" />
+
+  <!-- Shoulders & Blazer -->
+  <path d="M40 220 C40 175, 75 160, 95 155 L120 180 L145 155 C165 160, 200 175, 200 220 Z" fill="url(#suitFem)" filter="url(#shadowFem)" />
+
+  <!-- Inner Blouse -->
+  <path d="M100 156 L120 195 L140 156 C140 170, 100 170, 100 156 Z" fill="#F8FAFC" />
+  <!-- Lapel Accents -->
+  <path d="M95 155 L120 190 L108 190 Z" fill="#4338CA" opacity="0.6" />
+  <path d="M145 155 L120 190 L132 190 Z" fill="#4338CA" opacity="0.6" />
+
+  <!-- Neck -->
+  <rect x="108" y="125" width="24" height="35" rx="6" fill="url(#skinFem)" />
+
+  <!-- Hair Back -->
+  <path d="M68 95 C65 150, 75 175, 85 185 C90 155, 95 130, 95 105 Z" fill="url(#hairFem)" />
+  <path d="M172 95 C175 150, 165 175, 155 185 C150 155, 145 130, 145 105 Z" fill="url(#hairFem)" />
+
+  <!-- Head Base -->
+  <ellipse cx="120" cy="100" rx="36" ry="44" fill="url(#skinFem)" filter="url(#shadowFem)" />
+
+  <!-- Ears -->
+  <ellipse cx="84" cy="102" rx="6" ry="10" fill="url(#skinFem)" />
+  <ellipse cx="156" cy="102" rx="6" ry="10" fill="url(#skinFem)" />
+  <!-- Earrings -->
+  <circle cx="84" cy="110" r="2.5" fill="#F59E0B" />
+  <circle cx="156" cy="110" r="2.5" fill="#F59E0B" />
+
+  <!-- Hair Front & Bangs -->
+  <path d="M84 85 C84 50, 156 50, 156 85 C156 80, 145 65, 120 65 C95 65, 84 80, 84 85 Z" fill="url(#hairFem)" />
+  <path d="M84 85 C95 72, 125 70, 145 88 C135 75, 105 72, 84 85 Z" fill="url(#hairFem)" />
+
+  <!-- Eyebrows -->
+  <path d="M98 88 Q106 84 114 87" stroke="#3E2010" stroke-width="2.5" stroke-linecap="round" fill="none" />
+  <path d="M126 87 Q134 84 142 88" stroke="#3E2010" stroke-width="2.5" stroke-linecap="round" fill="none" />
+
+  <!-- Eyes -->
+  <ellipse cx="106" cy="98" rx="5" ry="4" fill="#2E1C12" />
+  <ellipse cx="134" cy="98" rx="5" ry="4" fill="#2E1C12" />
+  <circle cx="107.5" cy="96.5" r="1.5" fill="#FFFFFF" />
+  <circle cx="135.5" cy="96.5" r="1.5" fill="#FFFFFF" />
+
+  <!-- Eyelashes subtle -->
+  <path d="M100 95 Q106 91 112 95" stroke="#1A0B05" stroke-width="1.5" fill="none" />
+  <path d="M128 95 Q134 91 140 95" stroke="#1A0B05" stroke-width="1.5" fill="none" />
+
+  <!-- Nose -->
+  <path d="M120 98 Q123 108 120 111" stroke="#D39E82" stroke-width="2" stroke-linecap="round" fill="none" />
+
+  <!-- Smile / Lips -->
+  <path d="M110 122 Q120 131 130 122" stroke="#E11D48" stroke-width="3" stroke-linecap="round" fill="none" />
+  <path d="M112 122 Q120 127 128 122" fill="#FFFFFF" opacity="0.8" />
+
+  <!-- Recruiter Headset -->
+  <path d="M82 100 C75 55, 165 55, 158 100" stroke="#94A3B8" stroke-width="3.5" fill="none" stroke-linecap="round" />
+  <!-- Earpiece Left -->
+  <rect x="76" y="94" width="8" height="16" rx="4" fill="#334155" />
+  <rect x="78" y="96" width="4" height="12" rx="2" fill="#64748B" />
+  <!-- Earpiece Right -->
+  <rect x="156" y="94" width="8" height="16" rx="4" fill="#334155" />
+  <!-- Microphone Boom -->
+  <path d="M80 106 Q82 128 102 128" stroke="#475569" stroke-width="2.5" fill="none" stroke-linecap="round" />
+  <ellipse cx="104" cy="128" rx="3.5" ry="2.5" fill="#0EA5E9" />
+</svg>
