@@ -3,6 +3,7 @@
 import React from 'react';
 import { ResumeData } from '@/types/builder';
 import { Mail, Phone, MapPin, Globe, Link as LinkIcon, Code } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface TemplateProps {
   data: ResumeData;
@@ -18,7 +19,7 @@ export default function ClassicTemplate({ data }: TemplateProps) {
     p.linkedin && { icon: LinkIcon, text: p.linkedin.replace(/^https?:\/\/(www\.)?/, ''), href: p.linkedin.startsWith('http') ? p.linkedin : `https://${p.linkedin}` },
     p.github && { icon: Code, text: p.github.replace(/^https?:\/\/(www\.)?/, ''), href: p.github.startsWith('http') ? p.github : `https://${p.github}` },
     p.website && { icon: Globe, text: p.website.replace(/^https?:\/\/(www\.)?/, ''), href: p.website.startsWith('http') ? p.website : `https://${p.website}` },
-  ].filter(Boolean) as Array<{ icon: any; text: string; href?: string }>;
+  ].filter(Boolean) as Array<{ icon: LucideIcon; text: string; href?: string }>;
 
   const renderSection = (key: string) => {
     switch (key) {
@@ -195,10 +196,25 @@ export default function ClassicTemplate({ data }: TemplateProps) {
             <ul className="list-disc ml-4 space-y-0.5 text-[10.5px] text-gray-800">
               {additional.achievements.map((a) => (
                 <li key={a.id}>
-                  <span className="font-bold">{a.title}: </span> {a.description}
+                  <span className="font-bold">{a.title}</span>
+                  {a.date && <span className="text-gray-600"> ({a.date})</span>}
+                  {a.description && <>: {a.description}</>}
                 </li>
               ))}
             </ul>
+          </section>
+        );
+
+      case 'coursework':
+        if (!additional?.enabledSections?.coursework || !additional.coursework?.some((course) => course.trim())) return null;
+        return (
+          <section key="coursework" className="mb-4 break-inside-avoid">
+            <h2 className="text-[13px] font-bold text-gray-900 uppercase tracking-widest border-b border-gray-400 pb-1 mb-2 font-serif">
+              Relevant Coursework
+            </h2>
+            <p className="text-[10.5px] text-gray-800">
+              {additional.coursework.filter((course) => course.trim()).join(' • ')}
+            </p>
           </section>
         );
 

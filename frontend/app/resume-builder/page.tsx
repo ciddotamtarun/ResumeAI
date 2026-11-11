@@ -1,21 +1,15 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   FileEdit,
   Save,
   FolderOpen,
   Printer,
-  Sparkles,
-  RotateCcw,
   CheckCircle2,
   Clock,
-  AlertCircle,
-  FileText,
   Search,
-  ExternalLink,
-  ChevronRight,
   Loader2,
 } from 'lucide-react';
 import AppShell from '@/components/layout/AppShell';
@@ -36,8 +30,24 @@ import ResumePreview from '@/components/resume-builder/ResumePreview';
 import AiAssistModal from '@/components/resume-builder/AiAssistModal';
 import DraftsModal from '@/components/resume-builder/DraftsModal';
 import ExportModal from '@/components/resume-builder/ExportModal';
+import { normalizeResumeData } from '@/lib/builder-defaults';
 
 const LOCAL_STORAGE_KEY = 'resume_builder_active_draft_v1';
+type AiAssistContext = string | Record<string, unknown>;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (!isRecord(error)) return fallback;
+
+  const response = isRecord(error.response) ? error.response : undefined;
+  const responseData = response && isRecord(response.data) ? response.data : undefined;
+  const responseMessage = responseData?.message;
+  if (typeof responseMessage === 'string') return responseMessage;
+  return typeof error.message === 'string' ? error.message : fallback;
+}
 
 export default function ResumeBuilderPage() {
   const router = useRouter();
@@ -65,10 +75,22 @@ export default function ResumeBuilderPage() {
   const [aiOriginalText, setAiOriginalText] = useState('');
   const [aiSuggestedText, setAiSuggestedText] = useState<string | string[]>('');
   const [aiLoading, setAiLoading] = useState(false);
-  const aiContextRef = useRef<any>(null);
+  const aiContextRef = useRef<AiAssistContext | undefined>(undefined);
 
   // Analyzing state
   const [analyzing, setAnalyzing] = useState(false);
+
+  // 2. Fetch User Drafts from Backend
+  const loadSavedDrafts = useCallback(async () => {
+    try {
+      const res = await api.get('/builder/drafts');
+      if (res.data?.success && Array.isArray(res.data.drafts)) {
+        setSavedDrafts(res.data.drafts);
+      }
+    } catch {
+      // Backend may be offline; fallback to local drafts
+    }
+  }, []);
 
   // 1. Initial Load: Restore from LocalStorage or API
   useEffect(() => {
@@ -76,11 +98,19 @@ export default function ResumeBuilderPage() {
       try {
         const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed.data) setResumeData(parsed.data);
-          if (parsed.title) setDraftTitle(parsed.title);
-          if (parsed.template) setTemplate(parsed.template);
-          if (parsed.id) setCurrentDraftId(parsed.id);
+          const parsed: unknown = JSON.parse(stored);
+          if (isRecord(parsed)) {
+            if ('data' in parsed) {
+              // Restoring persisted client state is intentional during initial mount.
+              // eslint-disable-next-line react-hooks/set-state-in-effect
+              setResumeData(normalizeResumeData(parsed.data));
+            }
+            if (typeof parsed.title === 'string') setDraftTitle(parsed.title);
+            if (parsed.template === 'classic' || parsed.template === 'modern' || parsed.template === 'technical') {
+              setTemplate(parsed.template);
+            }
+            if (typeof parsed.id === 'string') setCurrentDraftId(parsed.id);
+          }
         }
       } catch (err) {
         console.error('Failed to parse local resume draft', err);
@@ -90,19 +120,7 @@ export default function ResumeBuilderPage() {
     if (isAuthenticated) {
       loadSavedDrafts();
     }
-  }, [isAuthenticated]);
-
-  // 2. Fetch User Drafts from Backend
-  const loadSavedDrafts = async () => {
-    try {
-      const res = await api.get('/builder/drafts');
-      if (res.data?.success && Array.isArray(res.data.drafts)) {
-        setSavedDrafts(res.data.drafts);
-      }
-    } catch {
-      // Backend may be offline; fallback to local drafts
-    }
-  };
+  }, [isAuthenticated, loadSavedDrafts]);
 
   // 3. Auto-save to LocalStorage on Change
   const handleDataChange = (updated: ResumeData) => {
@@ -145,9 +163,9 @@ export default function ResumeBuilderPage() {
         toast.success('Resume draft saved locally!');
       }
       setSaveStatus('saved');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Save failed', err);
-      toast.error(err.response?.data?.message || 'Failed to sync with cloud. Draft saved locally.');
+      toast.error(getErrorMessage(err, 'Failed to sync with cloud. Draft saved locally.'));
       setSaveStatus('saved');
     }
   };
@@ -161,7 +179,7 @@ export default function ResumeBuilderPage() {
         setCurrentDraftId(draft._id);
         setDraftTitle(draft.title);
         setTemplate(draft.template || 'classic');
-        if (draft.data) setResumeData(draft.data);
+        if (draft.data) setResumeData(normalizeResumeData(draft.data));
         setSaveStatus('saved');
         toast.success(`Loaded draft "${draft.title}"`);
       }
@@ -213,7 +231,7 @@ export default function ResumeBuilderPage() {
   const handleTriggerAiAssist = async (
     type: 'improve-summary' | 'polish-bullet' | 'suggest-skills' | 'grammar-fix',
     text: string,
-    context?: any
+    context?: AiAssistContext
   ) => {
     setAiModalType(type);
     setAiOriginalText(text);
@@ -241,7 +259,7 @@ export default function ResumeBuilderPage() {
       } else {
         setAiSuggestedText(text);
       }
-    } catch (err: any) {
+    } catch {
       toast.error('AI refinement unavailable. Providing heuristic suggestions.');
       if (type === 'improve-summary') {
         setAiSuggestedText(
@@ -313,8 +331,8 @@ export default function ResumeBuilderPage() {
       } else {
         toast.error('Analysis failed. Please ensure your resume has sufficient content.');
       }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to complete resume analysis.');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to complete resume analysis.'));
     } finally {
       setAnalyzing(false);
     }

@@ -75,6 +75,7 @@ export interface AwardEntry {
   title: string;
   issuer: string;
   date?: string;
+  description?: string;
 }
 
 export interface VolunteerEntry {
@@ -83,13 +84,14 @@ export interface VolunteerEntry {
   organization: string;
   startDate?: string;
   endDate?: string;
+  current?: boolean;
   description?: string;
 }
 
 export interface LanguageEntry {
   id: string;
   language: string;
-  proficiency: 'Basic' | 'Conversational' | 'Fluent' | 'Native / Bilingual';
+  proficiency: string;
 }
 
 export interface AdditionalSections {
@@ -173,7 +175,60 @@ export interface ResumeLanguage {
   language: string;
   proficiency: string;
 }
-export type ResumeBuilderData = any;
+
+export interface LegacyResumeBuilderData {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  template: TemplateType;
+  sectionOrder: SectionKey[];
+  enabledSections: Partial<Record<SectionKey, boolean>>;
+  contact: PersonalInfo;
+  summary: string;
+  experience: Array<{
+    id: string;
+    jobTitle: string;
+    company: string;
+    employmentType?: string;
+    location?: string;
+    startDate: string;
+    endDate: string;
+    current: boolean;
+    bullets: string[];
+  }>;
+  education: Array<{
+    id: string;
+    institution: string;
+    degree: string;
+    fieldOfStudy: string;
+    startDate: string;
+    endDate: string;
+    current?: boolean;
+    gpa?: string;
+    description?: string;
+  }>;
+  projects: Array<{
+    id: string;
+    title: string;
+    description: string;
+    technologies: string[];
+    projectUrl?: string;
+    githubUrl?: string;
+    bullets?: string[];
+  }>;
+  skills: {
+    technical: string[];
+    soft: string[];
+  };
+  certifications: CertificationEntry[];
+  awards: ResumeAward[];
+  volunteer: ResumeVolunteer[];
+  languages: ResumeLanguage[];
+  achievements?: AchievementEntry[];
+  coursework?: string[];
+}
+export type ResumeBuilderData = LegacyResumeBuilderData;
 export type ResumeDraftMeta = ResumeDraft;
 
 export const INITIAL_RESUME_DATA: ResumeData = {

@@ -21,7 +21,7 @@ import { Resume, Interview } from '@/types';
 import { formatDate, formatRelativeTime, getScoreColor, getScoreLabel } from '@/lib/utils';
 import AppShell from '@/components/layout/AppShell';
 import { AssessmentAttempt } from '@/app/skillproof/page';
-import { SavedJobMatch } from '@/app/job-matcher/page';
+import type { SavedJobMatch } from '@/lib/job-templates';
 import { toast } from 'sonner';
 
 type ActivityType = 'all' | 'resume' | 'skillproof' | 'interview' | 'match';
@@ -80,6 +80,8 @@ export default function HistoryPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
+      // Fetching the initial activity feed on authentication is intentional.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchData();
     }
   }, [isAuthenticated, fetchData]);
@@ -216,7 +218,7 @@ export default function HistoryPage() {
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setFilterType(tab.id as any)}
+                onClick={() => setFilterType(tab.id as ActivityType)}
                 className={`text-xs px-3 py-1.5 rounded-xl border transition-all ${
                   filterType === tab.id
                     ? 'bg-[#4F46D8] text-white border-[#4F46D8] font-bold shadow-xs'

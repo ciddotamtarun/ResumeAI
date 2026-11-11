@@ -39,7 +39,7 @@ import { Resume } from '@/types';
 import AppShell from '@/components/layout/AppShell';
 import { toast } from 'sonner';
 import { ROLE_CATEGORIES, ALL_ROLES } from '@/lib/roles';
-import { SAMPLE_JOBS, JobTemplate } from '@/app/job-matcher/page';
+import { SAMPLE_JOBS, type JobTemplate } from '@/lib/job-templates';
 import {
   QUESTION_BANKS,
   TECHNICAL_ROUND_MODES,
@@ -65,6 +65,12 @@ export interface AssessmentAttempt {
   timeSpentSeconds?: number;
   topicBreakdown?: Array<{ topic: string; score: number; total: number }>;
   weakTopics?: string[];
+}
+
+interface ApiAssessmentAttempt extends Partial<AssessmentAttempt> {
+  _id?: string;
+  assessmentId?: string;
+  createdAt?: string;
 }
 
 export type SkillVerificationStatus =
@@ -136,18 +142,18 @@ export default function SkillProofPage() {
     try {
       const res = await api.get('/api/assessment');
       if (res.data?.success && Array.isArray(res.data.attempts)) {
-        const backendAttempts: AssessmentAttempt[] = res.data.attempts.map((a: any) => ({
+        const backendAttempts: AssessmentAttempt[] = res.data.attempts.map((a: ApiAssessmentAttempt) => ({
           id: a._id || a.id || `att_${Date.now()}`,
-          domainId: a.assessmentId,
-          domainName: a.domainName,
+          domainId: a.assessmentId || a.domainId || '',
+          domainName: a.domainName || '',
           targetRole: a.targetRole,
           roundMode: a.roundMode,
           skillName: a.skillName,
-          score: a.score,
-          passed: a.passed,
+          score: a.score ?? 0,
+          passed: a.passed ?? false,
           date: a.createdAt || a.date || new Date().toISOString(),
-          totalQuestions: a.totalQuestions,
-          correctCount: a.correctCount,
+          totalQuestions: a.totalQuestions ?? 0,
+          correctCount: a.correctCount ?? 0,
           timeSpentSeconds: a.timeSpentSeconds,
           topicBreakdown: a.topicBreakdown,
           weakTopics: a.weakTopics,
@@ -174,6 +180,8 @@ export default function SkillProofPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
+      // Fetching initial data on authentication is intentional.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchResumes();
       fetchAttempts();
     }
@@ -292,6 +300,8 @@ export default function SkillProofPage() {
       if (savedState) {
         const parsed = JSON.parse(savedState);
         if (parsed.activeDomainKey && !activeDomainKey) {
+          // Restoring persisted client state on mount is intentional.
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setActiveDomainKey(parsed.activeDomainKey);
           setActiveRoundMode(parsed.activeRoundMode || 'fundamentals');
           setActiveSkillTarget(parsed.activeSkillTarget || '');

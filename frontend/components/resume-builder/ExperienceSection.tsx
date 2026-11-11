@@ -8,10 +8,6 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
-  Calendar,
-  MapPin,
-  Building2,
-  Check,
 } from 'lucide-react';
 import { ResumeExperience } from '@/types/builder';
 
@@ -31,6 +27,7 @@ export default function ExperienceSection({
   const addEntry = () => {
     const newEntry: ResumeExperience = {
       id: `exp-${Date.now()}`,
+      title: '',
       jobTitle: '',
       company: '',
       employmentType: 'Full-time',
@@ -77,7 +74,7 @@ export default function ExperienceSection({
   const removeBullet = (entryId: string, bulletIndex: number) => {
     const entry = experience.find((e) => e.id === entryId);
     if (!entry) return;
-    const newBullets = entry.bullets.filter((_, idx) => idx !== bulletIndex);
+    const newBullets = entry.bullets.filter((_: string, idx: number) => idx !== bulletIndex);
     updateEntry(entryId, { bullets: newBullets.length ? newBullets : [''] });
   };
 
@@ -273,7 +270,7 @@ export default function ExperienceSection({
                   </button>
                 </div>
 
-                {exp.bullets.map((bullet, bIdx) => (
+                {(exp.bullets || []).map((bullet: string, bIdx: number) => (
                   <div key={bIdx} className="flex items-start gap-1.5">
                     <span className="text-[#77798B] mt-2 text-[10px]">•</span>
                     <textarea

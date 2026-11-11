@@ -15,17 +15,21 @@ import {
   ChevronUp,
   ArrowUp,
   ArrowDown,
-  Check,
-  Globe,
-  Languages as LanguagesIcon,
   BookOpen,
-  HeartHandshake,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { ResumeData, SectionKey } from '@/types/builder';
+import type {
+  EducationEntry,
+  ExperienceEntry,
+  ProjectEntry,
+  ResumeData,
+  SkillItem,
+} from '@/types/builder';
+
+type AiAssistContext = string | Record<string, unknown>;
 
 interface ResumeEditorProps {
   data: ResumeData;
@@ -33,7 +37,7 @@ interface ResumeEditorProps {
   onAiAssist: (
     type: 'improve-summary' | 'polish-bullet' | 'suggest-skills' | 'grammar-fix',
     text: string,
-    context?: any
+    context?: AiAssistContext
   ) => void;
 }
 
@@ -81,7 +85,11 @@ export default function ResumeEditor({ data, onChange, onAiAssist }: ResumeEdito
     onChange({ ...data, education: [...data.education, newEdu] });
   };
 
-  const updateEducation = (index: number, field: string, value: any) => {
+  const updateEducation = <K extends keyof EducationEntry,>(
+    index: number,
+    field: K,
+    value: EducationEntry[K]
+  ) => {
     const updated = [...data.education];
     updated[index] = { ...updated[index], [field]: value };
     onChange({ ...data, education: updated });
@@ -107,7 +115,11 @@ export default function ResumeEditor({ data, onChange, onAiAssist }: ResumeEdito
     onChange({ ...data, experience: [...data.experience, newExp] });
   };
 
-  const updateExperience = (index: number, field: string, value: any) => {
+  const updateExperience = <K extends keyof ExperienceEntry,>(
+    index: number,
+    field: K,
+    value: ExperienceEntry[K]
+  ) => {
     const updated = [...data.experience];
     updated[index] = { ...updated[index], [field]: value };
     onChange({ ...data, experience: updated });
@@ -151,7 +163,11 @@ export default function ResumeEditor({ data, onChange, onAiAssist }: ResumeEdito
     onChange({ ...data, projects: [...data.projects, newProj] });
   };
 
-  const updateProject = (index: number, field: string, value: any) => {
+  const updateProject = <K extends keyof ProjectEntry,>(
+    index: number,
+    field: K,
+    value: ProjectEntry[K]
+  ) => {
     const updated = [...data.projects];
     updated[index] = { ...updated[index], [field]: value };
     onChange({ ...data, projects: updated });
@@ -165,7 +181,7 @@ export default function ResumeEditor({ data, onChange, onAiAssist }: ResumeEdito
   const [techInput, setTechInput] = useState('');
   const [softInput, setSoftInput] = useState('');
 
-  const addTechSkill = (name: string, level?: any) => {
+  const addTechSkill = (name: string, level: SkillItem['level'] = 'Advanced') => {
     if (!name.trim()) return;
     const exists = data.skills.technical.some(
       (s) => s.name.toLowerCase() === name.trim().toLowerCase()
@@ -175,7 +191,7 @@ export default function ResumeEditor({ data, onChange, onAiAssist }: ResumeEdito
         ...data,
         skills: {
           ...data.skills,
-          technical: [...data.skills.technical, { id: `sk_${Date.now()}`, name: name.trim(), level: level || 'Advanced' }],
+          technical: [...data.skills.technical, { id: `sk_${Date.now()}`, name: name.trim(), level }],
         },
       });
     }
@@ -229,6 +245,60 @@ export default function ResumeEditor({ data, onChange, onAiAssist }: ResumeEdito
           ...data.additional.enabledSections,
           [key]: !data.additional.enabledSections[key],
         },
+      },
+    });
+  };
+
+  const addAchievement = () => {
+    onChange({
+      ...data,
+      additional: {
+        ...data.additional,
+        achievements: [
+          ...data.additional.achievements,
+          { id: `achievement_${Date.now()}`, title: '', description: '', date: '' },
+        ],
+      },
+    });
+  };
+
+  const updateAchievement = (index: number, field: 'title' | 'description' | 'date', value: string) => {
+    const achievements = data.additional.achievements.map((achievement, currentIndex) =>
+      currentIndex === index ? { ...achievement, [field]: value } : achievement
+    );
+    onChange({ ...data, additional: { ...data.additional, achievements } });
+  };
+
+  const removeAchievement = (index: number) => {
+    onChange({
+      ...data,
+      additional: {
+        ...data.additional,
+        achievements: data.additional.achievements.filter((_, currentIndex) => currentIndex !== index),
+      },
+    });
+  };
+
+  const addCoursework = () => {
+    onChange({
+      ...data,
+      additional: { ...data.additional, coursework: [...data.additional.coursework, ''] },
+    });
+  };
+
+  const updateCoursework = (index: number, value: string) => {
+    const coursework = data.additional.coursework.map((course, currentIndex) =>
+      currentIndex === index ? value : course
+    );
+    onChange({ ...data, additional: { ...data.additional, coursework } });
+  };
+
+  const removeCoursework = (index: number) => {
+    onChange({
+      ...data,
+      additional: {
+        ...data.additional,
+        coursework: data.additional.coursework.filter((_, currentIndex) => currentIndex !== index),
       },
     });
   };
@@ -984,7 +1054,7 @@ export default function ResumeEditor({ data, onChange, onAiAssist }: ResumeEdito
             </div>
             <div>
               <h3 className="text-sm font-bold text-[#171A35]">Additional Sections</h3>
-              <p className="text-[11px] text-[#77798B]">Certifications, Achievements, Languages, Volunteer & Honors</p>
+              <p className="text-[11px] text-[#77798B]">Certifications, Achievements, Coursework, Languages, Volunteer & Honors</p>
             </div>
           </div>
           {openSections.additional ? <ChevronUp className="w-4 h-4 text-[#77798B]" /> : <ChevronDown className="w-4 h-4 text-[#77798B]" />}
@@ -1005,11 +1075,109 @@ export default function ResumeEditor({ data, onChange, onAiAssist }: ResumeEdito
                   <span className="text-xs font-bold capitalize">{secKey}</span>
                   <Switch
                     checked={isEnabled}
-                    onCheckedChange={() => toggleAdditionalSection(secKey as any)}
+                    onCheckedChange={() =>
+                      toggleAdditionalSection(secKey as keyof typeof data.additional.enabledSections)
+                    }
                   />
                 </label>
               ))}
             </div>
+
+            {/* Achievements Editor */}
+            {data.additional.enabledSections.achievements && (
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#171A35] uppercase">Achievements</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={addAchievement}
+                    className="h-6 text-[10.5px] text-[#4F46D8] hover:bg-[#F3F0FC] px-2"
+                  >
+                    <Plus className="w-3 h-3 mr-1" /> Add Achievement
+                  </Button>
+                </div>
+
+                {data.additional.achievements.map((achievement, index) => (
+                  <div key={achievement.id} className="rounded-xl border border-[#E7E1D4] p-3 space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        value={achievement.title}
+                        onChange={(event) => updateAchievement(index, 'title', event.target.value)}
+                        placeholder="Achievement title"
+                        aria-label="Achievement title"
+                        className="h-8 text-xs flex-1"
+                      />
+                      <Input
+                        value={achievement.date ?? ''}
+                        onChange={(event) => updateAchievement(index, 'date', event.target.value)}
+                        placeholder="Date"
+                        aria-label="Achievement date"
+                        className="h-8 text-xs w-28"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeAchievement(index)}
+                        aria-label="Remove achievement"
+                        className="h-8 w-8 p-0 text-gray-400 hover:text-rose-600"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                    <Textarea
+                      value={achievement.description}
+                      onChange={(event) => updateAchievement(index, 'description', event.target.value)}
+                      placeholder="Describe the achievement and its impact"
+                      aria-label="Achievement description"
+                      className="min-h-16 text-xs"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Coursework Editor */}
+            {data.additional.enabledSections.coursework && (
+              <div className="space-y-3 pt-2 border-t border-[#E7E1D4]">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#171A35] uppercase">Coursework</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={addCoursework}
+                    className="h-6 text-[10.5px] text-[#4F46D8] hover:bg-[#F3F0FC] px-2"
+                  >
+                    <Plus className="w-3 h-3 mr-1" /> Add Course
+                  </Button>
+                </div>
+
+                {data.additional.coursework.map((course, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      value={course}
+                      onChange={(event) => updateCoursework(index, event.target.value)}
+                      placeholder="Course name"
+                      aria-label={`Coursework entry ${index + 1}`}
+                      className="h-8 text-xs flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeCoursework(index)}
+                      aria-label="Remove coursework entry"
+                      className="h-8 w-8 p-0 text-gray-400 hover:text-rose-600"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Certifications Editor */}
             {data.additional.enabledSections.certifications && (
@@ -1131,7 +1299,7 @@ export default function ResumeEditor({ data, onChange, onAiAssist }: ResumeEdito
                       value={lang.proficiency}
                       onChange={(e) => {
                         const updated = [...data.additional.languages];
-                        updated[lIdx].proficiency = e.target.value as any;
+                        updated[lIdx].proficiency = e.target.value;
                         onChange({ ...data, additional: { ...data.additional, languages: updated } });
                       }}
                       placeholder="Proficiency (Fluent, Native...)"

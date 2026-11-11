@@ -1,4 +1,4 @@
-import { ResumeBuilderData, SectionKey } from '@/types/builder';
+import { ResumeBuilderData, ResumeData, SectionKey } from '@/types/builder';
 
 export const DEFAULT_SECTION_ORDER: SectionKey[] = [
   'summary',
@@ -7,9 +7,11 @@ export const DEFAULT_SECTION_ORDER: SectionKey[] = [
   'skills',
   'education',
   'certifications',
+  'achievements',
   'awards',
   'volunteer',
   'languages',
+  'coursework',
 ];
 
 export const DEFAULT_ENABLED_SECTIONS: Record<SectionKey, boolean> = {
@@ -19,9 +21,11 @@ export const DEFAULT_ENABLED_SECTIONS: Record<SectionKey, boolean> = {
   skills: true,
   education: true,
   certifications: true,
+  achievements: true,
   awards: false,
   volunteer: false,
   languages: true,
+  coursework: false,
 };
 
 export const SAMPLE_RESUME_DATA: ResumeBuilderData = {
@@ -214,6 +218,166 @@ export const EMPTY_RESUME_DATA: ResumeBuilderData = {
   languages: [],
 };
 
+type DataRecord = Record<string, unknown>;
+
+const isRecord = (value: unknown): value is DataRecord =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const asRecord = (value: unknown): DataRecord => (isRecord(value) ? value : {});
+const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
+const asString = (value: unknown, fallback = '') => (typeof value === 'string' ? value : fallback);
+
+function normalizeStringArray(value: unknown): string[] {
+  if (typeof value === 'string') return value.split(/[\n,]/).map((item) => item.trim()).filter(Boolean);
+  return asArray(value).filter((item): item is string => typeof item === 'string');
+}
+
+function normalizeEntries<T>(
+  value: unknown,
+  mapper: (entry: DataRecord, index: number) => T
+): T[] {
+  return asArray(value).flatMap((entry, index) => (isRecord(entry) ? [mapper(entry, index)] : []));
+}
+
+function normalizeSkillList(value: unknown, kind: 'technical' | 'soft') {
+  return asArray(value).flatMap((item, index) => {
+    if (typeof item === 'string') {
+      return [{ id: `${kind}-${index}`, name: item }];
+    }
+    if (!isRecord(item)) return [];
+
+    const level = item.level;
+    const skill = {
+      id: asString(item.id, `${kind}-${index}`),
+      name: asString(item.name),
+    };
+    if (level === 'Beginner' || level === 'Intermediate' || level === 'Advanced' || level === 'Expert') {
+      return [{ ...skill, level }];
+    }
+    return [skill];
+  });
+}
+
+function additionalValue(additional: DataRecord, root: DataRecord, key: string): unknown {
+  return additional[key] ?? root[key];
+}
+
+export function normalizeResumeData(value: unknown): ResumeData {
+  const source = asRecord(value);
+  const additional = asRecord(source.additional);
+  const personalInfo = asRecord(source.personalInfo ?? source.contact);
+  const enabledSections = asRecord(additional.enabledSections ?? source.enabledSections);
+  const sectionKeys = new Set<string>(DEFAULT_SECTION_ORDER);
+  const requestedOrder = asArray(source.sectionOrder).filter(
+    (key): key is SectionKey => typeof key === 'string' && sectionKeys.has(key)
+  );
+  const sectionOrder = [...new Set(requestedOrder)];
+  for (const section of DEFAULT_SECTION_ORDER) {
+    if (!sectionOrder.includes(section)) sectionOrder.push(section);
+  }
+  const sectionEnabled = (key: SectionKey) =>
+    typeof enabledSections[key] === 'boolean' ? enabledSections[key] : DEFAULT_ENABLED_SECTIONS[key];
+  const stringArray = (key: string) => normalizeStringArray(additionalValue(additional, source, key));
+  const skills = asRecord(source.skills);
+
+  return {
+    personalInfo: {
+      fullName: asString(personalInfo.fullName),
+      jobTitle: asString(personalInfo.jobTitle),
+      email: asString(personalInfo.email),
+      phone: asString(personalInfo.phone),
+      location: asString(personalInfo.location),
+      linkedin: asString(personalInfo.linkedin),
+      github: asString(personalInfo.github),
+      website: asString(personalInfo.website),
+    },
+    summary: asString(source.summary),
+    education: normalizeEntries(source.education, (entry, index) => ({
+      id: asString(entry.id, `education-${index}`),
+      institution: asString(entry.institution),
+      degree: asString(entry.degree),
+      fieldOfStudy: asString(entry.fieldOfStudy),
+      startDate: asString(entry.startDate),
+      endDate: asString(entry.endDate),
+      current: typeof entry.current === 'boolean' ? entry.current : false,
+      gpa: asString(entry.gpa),
+      description: asString(entry.description),
+    })),
+    experience: normalizeEntries(source.experience, (entry, index) => ({
+      id: asString(entry.id, `experience-${index}`),
+      title: asString(entry.title ?? entry.jobTitle),
+      company: asString(entry.company),
+      employmentType: asString(entry.employmentType),
+      location: asString(entry.location),
+      startDate: asString(entry.startDate),
+      endDate: asString(entry.endDate),
+      current: typeof entry.current === 'boolean' ? entry.current : false,
+      bullets: normalizeStringArray(entry.bullets),
+    })),
+    projects: normalizeEntries(source.projects, (entry, index) => ({
+      id: asString(entry.id, `project-${index}`),
+      title: asString(entry.title),
+      description: asString(entry.description),
+      technologies: normalizeStringArray(entry.technologies),
+      projectUrl: asString(entry.projectUrl),
+      githubUrl: asString(entry.githubUrl),
+      bullets: normalizeStringArray(entry.bullets),
+    })),
+    skills: {
+      technical: normalizeSkillList(skills.technical, 'technical'),
+      soft: normalizeSkillList(skills.soft, 'soft'),
+    },
+    additional: {
+      certifications: normalizeEntries(additionalValue(additional, source, 'certifications'), (entry, index) => ({
+        id: asString(entry.id, `certification-${index}`),
+        name: asString(entry.name),
+        issuer: asString(entry.issuer),
+        date: asString(entry.date),
+        url: asString(entry.url),
+      })),
+      achievements: normalizeEntries(additionalValue(additional, source, 'achievements'), (entry, index) => ({
+        id: asString(entry.id, `achievement-${index}`),
+        title: asString(entry.title),
+        description: asString(entry.description),
+        date: asString(entry.date),
+      })),
+      awards: normalizeEntries(additionalValue(additional, source, 'awards'), (entry, index) => ({
+        id: asString(entry.id, `award-${index}`),
+        title: asString(entry.title),
+        issuer: asString(entry.issuer),
+        date: asString(entry.date),
+        description: asString(entry.description),
+      })),
+      coursework: stringArray('coursework'),
+      volunteer: normalizeEntries(additionalValue(additional, source, 'volunteer'), (entry, index) => ({
+        id: asString(entry.id, `volunteer-${index}`),
+        role: asString(entry.role),
+        organization: asString(entry.organization),
+        startDate: asString(entry.startDate),
+        endDate: asString(entry.endDate),
+        current: typeof entry.current === 'boolean' ? entry.current : false,
+        description: asString(entry.description),
+      })),
+      languages: normalizeEntries(additionalValue(additional, source, 'languages'), (entry, index) => {
+        return {
+          id: asString(entry.id, `language-${index}`),
+          language: asString(entry.language),
+          proficiency: asString(entry.proficiency, 'Conversational'),
+        };
+      }),
+      enabledSections: {
+        certifications: sectionEnabled('certifications'),
+        achievements: sectionEnabled('achievements'),
+        awards: sectionEnabled('awards'),
+        coursework: sectionEnabled('coursework'),
+        volunteer: sectionEnabled('volunteer'),
+        languages: sectionEnabled('languages'),
+      },
+    },
+    sectionOrder,
+  };
+}
+
 /**
  * Calculates a 0-100 completion percentage based on completeness of core resume fields
  */
@@ -254,26 +418,35 @@ export function calculateResumeScore(data: ResumeBuilderData): number {
 /**
  * Formats structured resume data into clear, standard plain text suitable for ATS analysis
  */
-export function resumeToPlainText(data: ResumeBuilderData): string {
+export function resumeToPlainText(value: unknown): string {
+  const data = normalizeResumeData(value);
   const parts: string[] = [];
+  const contact = data.personalInfo;
+  const legacyEnabledSections = asRecord(asRecord(value).enabledSections);
 
   // Header / Contact
-  const name = data.contact.fullName || 'Candidate';
-  const title = data.contact.jobTitle ? `\n${data.contact.jobTitle}` : '';
+  const name = contact.fullName.trim() || 'Candidate';
+  const title = contact.jobTitle ? `\n${contact.jobTitle}` : '';
   const contactItems = [
-    data.contact.email,
-    data.contact.phone,
-    data.contact.location,
-    data.contact.linkedin,
-    data.contact.github,
-    data.contact.website,
+    contact.email,
+    contact.phone,
+    contact.location,
+    contact.linkedin,
+    contact.github,
+    contact.website,
   ].filter(Boolean);
 
   parts.push(`${name.toUpperCase()}${title}\n${contactItems.join(' | ')}`);
 
   // Order based sections
   for (const section of data.sectionOrder) {
-    if (!data.enabledSections[section]) continue;
+    if (legacyEnabledSections[section] === false) continue;
+    if (
+      ['certifications', 'achievements', 'awards', 'volunteer', 'languages', 'coursework'].includes(section) &&
+      !data.additional.enabledSections[section as keyof typeof data.additional.enabledSections]
+    ) {
+      continue;
+    }
 
     switch (section) {
       case 'summary':
@@ -283,16 +456,17 @@ export function resumeToPlainText(data: ResumeBuilderData): string {
         break;
 
       case 'experience':
-        if (data.experience.length > 0) {
+        if (data.experience?.length) {
           const expText = data.experience
             .map((exp) => {
-              const dates = `${exp.startDate} - ${exp.current ? 'Present' : exp.endDate}`;
+              const dates = [exp.startDate, exp.current ? 'Present' : exp.endDate].filter(Boolean).join(' - ');
               const meta = [exp.company, exp.location, dates].filter(Boolean).join(' | ');
               const bullets = exp.bullets
-                .filter((b) => b.trim())
-                .map((b) => `• ${b}`)
+                .map((bullet) => bullet.trim())
+                .filter(Boolean)
+                .map((bullet) => `• ${bullet}`)
                 .join('\n');
-              return `${exp.jobTitle}\n${meta}${bullets ? `\n${bullets}` : ''}`;
+              return `${exp.title}\n${meta}${bullets ? `\n${bullets}` : ''}`.trim();
             })
             .join('\n\n');
           parts.push(`\nWORK EXPERIENCE\n${expText}`);
@@ -300,16 +474,17 @@ export function resumeToPlainText(data: ResumeBuilderData): string {
         break;
 
       case 'projects':
-        if (data.projects.length > 0) {
+        if (data.projects?.length) {
           const projText = data.projects
             .map((p) => {
-              const tech = p.technologies.length > 0 ? ` [${p.technologies.join(', ')}]` : '';
+              const tech = p.technologies.length ? ` [${p.technologies.join(', ')}]` : '';
               const link = p.projectUrl || p.githubUrl ? ` (${p.projectUrl || p.githubUrl})` : '';
-              const bullets = p.bullets
-                .filter((b) => b.trim())
-                .map((b) => `• ${b}`)
+              const bullets = (p.bullets ?? [])
+                .map((bullet) => bullet.trim())
+                .filter(Boolean)
+                .map((bullet) => `• ${bullet}`)
                 .join('\n');
-              return `${p.title}${tech}${link}\n${p.description}${bullets ? `\n${bullets}` : ''}`;
+              return `${p.title}${tech}${link}\n${p.description}${bullets ? `\n${bullets}` : ''}`.trim();
             })
             .join('\n\n');
           parts.push(`\nPROJECTS\n${projText}`);
@@ -317,8 +492,8 @@ export function resumeToPlainText(data: ResumeBuilderData): string {
         break;
 
       case 'skills':
-        const techSkills = data.skills.technical.filter(Boolean);
-        const softSkills = data.skills.soft.filter(Boolean);
+        const techSkills = data.skills.technical.map((skill) => skill.name).filter(Boolean);
+        const softSkills = data.skills.soft.map((skill) => skill.name).filter(Boolean);
         if (techSkills.length > 0 || softSkills.length > 0) {
           const lines: string[] = [];
           if (techSkills.length > 0) lines.push(`Technical Skills: ${techSkills.join(', ')}`);
@@ -328,14 +503,14 @@ export function resumeToPlainText(data: ResumeBuilderData): string {
         break;
 
       case 'education':
-        if (data.education.length > 0) {
+        if (data.education?.length) {
           const eduText = data.education
             .map((edu) => {
               const degreeField = [edu.degree, edu.fieldOfStudy].filter(Boolean).join(' in ');
-              const dates = `${edu.startDate} - ${edu.current ? 'Present' : edu.endDate}`;
+              const dates = [edu.startDate, edu.current ? 'Present' : edu.endDate].filter(Boolean).join(' - ');
               const gpa = edu.gpa ? ` | GPA: ${edu.gpa}` : '';
               const desc = edu.description ? `\n${edu.description}` : '';
-              return `${edu.institution}\n${degreeField} | ${dates}${gpa}${desc}`;
+              return `${edu.institution}\n${degreeField}${dates ? ` | ${dates}` : ''}${gpa}${desc}`.trim();
             })
             .join('\n\n');
           parts.push(`\nEDUCATION\n${eduText}`);
@@ -343,41 +518,70 @@ export function resumeToPlainText(data: ResumeBuilderData): string {
         break;
 
       case 'certifications':
-        if (data.certifications.length > 0) {
-          const certText = data.certifications
-            .map((c) => `${c.name} - ${c.issuer} (${c.date})`)
+        if (data.additional.certifications.length) {
+          const certText = data.additional.certifications
+            .map((cert) => [cert.name, cert.issuer, cert.date].filter(Boolean).join(' - '))
             .join('\n');
           parts.push(`\nCERTIFICATIONS\n${certText}`);
         }
         break;
 
+      case 'achievements':
+        if (data.additional.achievements.length) {
+          const achievementText = data.additional.achievements
+            .map((achievement) => {
+              const details = [achievement.date, achievement.description].filter(Boolean).join(' — ');
+              return `${achievement.title}${details ? `\n${details}` : ''}`.trim();
+            })
+            .join('\n');
+          parts.push(`\nKEY ACHIEVEMENTS\n${achievementText}`);
+        }
+        break;
+
       case 'awards':
-        if (data.awards.length > 0) {
-          const awardText = data.awards
-            .map((a) => `${a.title} - ${a.issuer} (${a.date})${a.description ? `\n${a.description}` : ''}`)
+        if (data.additional.awards.length) {
+          const awardText = data.additional.awards
+            .map((award) => {
+              const details = [award.issuer, award.date].filter(Boolean).join(' - ');
+              return `${award.title}${details ? ` - ${details}` : ''}${award.description ? `\n${award.description}` : ''}`;
+            })
             .join('\n');
           parts.push(`\nAWARDS & HONORS\n${awardText}`);
         }
         break;
 
       case 'volunteer':
-        if (data.volunteer.length > 0) {
-          const volText = data.volunteer
-            .map(
-              (v) =>
-                `${v.role} at ${v.organization} (${v.startDate} - ${v.current ? 'Present' : v.endDate})${
-                  v.description ? `\n${v.description}` : ''
-                }`
-            )
+        if (data.additional.volunteer.length) {
+          const volText = data.additional.volunteer
+            .map((volunteer) => {
+              const dates = [
+                volunteer.startDate,
+                volunteer.current ? 'Present' : volunteer.endDate,
+              ].filter(Boolean).join(' - ');
+              const role = [volunteer.role, volunteer.organization].filter(Boolean).join(' at ');
+              return `${role}${dates ? ` (${dates})` : ''}${volunteer.description ? `\n${volunteer.description}` : ''}`;
+            })
             .join('\n');
           parts.push(`\nVOLUNTEER EXPERIENCE\n${volText}`);
         }
         break;
 
       case 'languages':
-        if (data.languages.length > 0) {
-          const langText = data.languages.map((l) => `${l.language} (${l.proficiency})`).join(', ');
+        if (data.additional.languages.length) {
+          const langText = data.additional.languages
+            .map((language) =>
+              language.proficiency ? `${language.language} (${language.proficiency})` : language.language
+            )
+            .filter(Boolean)
+            .join(', ');
           parts.push(`\nLANGUAGES\n${langText}`);
+        }
+        break;
+
+      case 'coursework':
+        if (data.additional.coursework.length) {
+          const coursework = data.additional.coursework.map((course) => course.trim()).filter(Boolean);
+          if (coursework.length) parts.push(`\nRELEVANT COURSEWORK\n${coursework.join(', ')}`);
         }
         break;
     }

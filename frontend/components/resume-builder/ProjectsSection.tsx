@@ -56,13 +56,13 @@ export default function ProjectsSection({
   const addBullet = (projId: string) => {
     const proj = projects.find((p) => p.id === projId);
     if (!proj) return;
-    updateEntry(projId, { bullets: [...proj.bullets, ''] });
+    updateEntry(projId, { bullets: [...(proj.bullets || []), ''] });
   };
 
   const updateBullet = (projId: string, index: number, val: string) => {
     const proj = projects.find((p) => p.id === projId);
     if (!proj) return;
-    const newBullets = [...proj.bullets];
+    const newBullets = [...(proj.bullets || [])];
     newBullets[index] = val;
     updateEntry(projId, { bullets: newBullets });
   };
@@ -70,7 +70,7 @@ export default function ProjectsSection({
   const removeBullet = (projId: string, index: number) => {
     const proj = projects.find((p) => p.id === projId);
     if (!proj) return;
-    const newBullets = proj.bullets.filter((_, idx) => idx !== index);
+    const newBullets = (proj.bullets || []).filter((_: string, idx: number) => idx !== index);
     updateEntry(projId, { bullets: newBullets.length ? newBullets : [''] });
   };
 
@@ -237,7 +237,7 @@ export default function ProjectsSection({
                   </button>
                 </div>
 
-                {proj.bullets.map((b, bIdx) => (
+                {(proj.bullets || []).map((b: string, bIdx: number) => (
                   <div key={bIdx} className="flex items-start gap-1.5">
                     <span className="text-[#77798B] mt-2 text-[10px]">•</span>
                     <textarea

@@ -18,9 +18,11 @@ const SECTION_LABELS: Record<SectionKey, string> = {
   skills: 'Skills & Competencies',
   education: 'Education',
   certifications: 'Certifications',
+  achievements: 'Key Achievements',
   awards: 'Honors & Awards',
   volunteer: 'Volunteer & Leadership',
   languages: 'Languages',
+  coursework: 'Relevant Coursework',
 };
 
 export default function SectionManager({

@@ -3,6 +3,7 @@
 import React from 'react';
 import { ResumeData } from '@/types/builder';
 import { Mail, Phone, MapPin, Globe, Link as LinkIcon, Code } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface TemplateProps {
   data: ResumeData;
@@ -18,7 +19,7 @@ export default function ModernTemplate({ data }: TemplateProps) {
     p.linkedin && { icon: LinkIcon, text: p.linkedin.replace(/^https?:\/\/(www\.)?/, ''), href: p.linkedin.startsWith('http') ? p.linkedin : `https://${p.linkedin}` },
     p.github && { icon: Code, text: p.github.replace(/^https?:\/\/(www\.)?/, ''), href: p.github.startsWith('http') ? p.github : `https://${p.github}` },
     p.website && { icon: Globe, text: p.website.replace(/^https?:\/\/(www\.)?/, ''), href: p.website.startsWith('http') ? p.website : `https://${p.website}` },
-  ].filter(Boolean) as Array<{ icon: any; text: string; href?: string }>;
+  ].filter(Boolean) as Array<{ icon: LucideIcon; text: string; href?: string }>;
 
   const renderSection = (key: string) => {
     switch (key) {
@@ -234,10 +235,28 @@ export default function ModernTemplate({ data }: TemplateProps) {
             <ul className="list-disc ml-3.5 space-y-0.5 text-[10px] text-[#2C2F48]">
               {additional.achievements.map((a) => (
                 <li key={a.id}>
-                  <strong className="text-[#171A35]">{a.title}:</strong> {a.description}
+                  <strong className="text-[#171A35]">{a.title}</strong>
+                  {a.date && <span className="text-[#77798B]"> ({a.date})</span>}
+                  {a.description && <>: {a.description}</>}
                 </li>
               ))}
             </ul>
+          </section>
+        );
+
+      case 'coursework':
+        if (!additional?.enabledSections?.coursework || !additional.coursework?.some((course) => course.trim())) return null;
+        return (
+          <section key="coursework" className="mb-4 break-inside-avoid">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-1.5 h-3.5 bg-[#4F46D8] rounded-full"></span>
+              <h2 className="text-[12px] font-bold text-[#171A35] uppercase tracking-wider">
+                Relevant Coursework
+              </h2>
+            </div>
+            <p className="text-[10px] text-[#2C2F48]">
+              {additional.coursework.filter((course) => course.trim()).join(' • ')}
+            </p>
           </section>
         );
 

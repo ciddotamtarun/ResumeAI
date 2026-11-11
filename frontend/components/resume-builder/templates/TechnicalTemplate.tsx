@@ -180,10 +180,25 @@ export default function TechnicalTemplate({ data }: TemplateProps) {
             <ul className="list-disc ml-4 space-y-0.5 text-[9.5px] text-black">
               {additional.achievements.map((a) => (
                 <li key={a.id}>
-                  <span className="font-bold">{a.title}:</span> {a.description}
+                  <span className="font-bold">{a.title}</span>
+                  {a.date && <span> ({a.date})</span>}
+                  {a.description && <>: {a.description}</>}
                 </li>
               ))}
             </ul>
+          </section>
+        );
+
+      case 'coursework':
+        if (!additional?.enabledSections?.coursework || !additional.coursework?.some((course) => course.trim())) return null;
+        return (
+          <section key="coursework" className="mb-3 break-inside-avoid">
+            <h2 className="text-[11.5px] font-bold text-black uppercase tracking-wider border-b border-black pb-0.5 mb-1.5 font-mono">
+              RELEVANT COURSEWORK
+            </h2>
+            <p className="text-[9.5px] text-black">
+              {additional.coursework.filter((course) => course.trim()).join(', ')}
+            </p>
           </section>
         );
 
